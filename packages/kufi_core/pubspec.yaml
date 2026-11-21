@@ -1,0 +1,14 @@
+name: kufi_core
+description: Modelos, catálogo de trufis, libro mayor y protocolo de pago de Kufi.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  crypto: ^3.0.6
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

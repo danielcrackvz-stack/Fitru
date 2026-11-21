@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main, cursor/**]
+  pull_request:
+
+jobs:
+  nucleo:
+    name: Libro, rutas y pagos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Dependencias
+        working-directory: packages/kufi_core
+        run: dart pub get
+      - name: Analizar
+        working-directory: packages/kufi_core
+        run: dart analyze --fatal-infos
+      - name: Tests
+        working-directory: packages/kufi_core
+        run: dart test
+
+  app:
+    name: App Flutter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependencias
+        working-directory: apps/kufi
+        run: flutter pub get
+      - name: Analizar
+        working-directory: apps/kufi
+        run: flutter analyze
+      - name: Tests
+        working-directory: apps/kufi
+        run: flutter test
