@@ -48,11 +48,11 @@ Cada push a `main` publica dos artifacts:
 - `kufi-apk-debug`: un solo APK de depuración, pesado.
 - `subi-apk-release`: `app-arm64-v8a-release.apk`, `app-armeabi-v7a-release.apk` y `app-x86_64-release.apk`.
 
-La demo para el celular es el prerelease v0.3.0, con `Subi-v0.3.0-arm64.apk` y `Subi-v0.3.0-armv7.apk`:
+La demo para el celular es el prerelease v0.4.0, con `Subi-v0.4.0-arm64.apk` y `Subi-v0.4.0-armv7.apk`:
 
-https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.3.0-demo
+https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.4.0-demo
 
-La v0.2.0 sigue en https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.2.0-demo
+La v0.3.0 sigue en https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.3.0-demo
 
 Corridas: https://github.com/danielcrackvz-stack/Fitru/actions/workflows/ci.yml
 
@@ -75,7 +75,7 @@ El mapa dibuja las 250 polilíneas con el color del panter. La ida va continua y
 
 Inicio es la billetera: saldo, recarga, pago por NFC, Bluetooth o QR, y los últimos viajes. Una tarjeta chica, «¿A dónde vas?», abre la pestaña Mapa.
 
-En Mapa el origen es «Mi ubicación». El destino se marca moviendo el mapa o tocándolo, y con «Fijar destino». La hoja de abajo lista las opciones por tiempo, con la caminata y el tramo de cada línea. La comparación con Cruzero y Trufi está en [docs/COMPARATIVA.md](docs/COMPARATIVA.md).
+En Mapa se elige el origen y el destino: con el GPS, tocando el mapa o buscando el lugar. Si no hay GPS, se marca el punto en el mapa. La hoja de abajo lista las opciones por tiempo, con la caminata y el tramo de cada línea. La comparación con Cruzero y Trufi está en [docs/COMPARATIVA.md](docs/COMPARATIVA.md).
 
 Para un ruteador futuro:
 

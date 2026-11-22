@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:kufi_core/kufi_core.dart';
@@ -6,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import '../../alcance.dart';
 import '../../estado/estado_kufi.dart';
 import '../../formato.dart';
+import '../../servicios/busqueda_lugares.dart';
 import '../../servicios/teselas.dart';
 import '../../servicios/ubicacion.dart';
 import '../../tema.dart';
@@ -23,8 +26,10 @@ class PantallaPlan extends StatefulWidget {
 class _PantallaPlanState extends State<PantallaPlan> {
   final _teselas = ConfigTeselas.desdeEntorno();
   final _mapa = MapController();
-  Coord? _destino;
+  _PuntoElegido? _origen;
+  _PuntoElegido? _destino;
   Coord _centro = centroSantaCruz;
+  _ModoMarca _modo = _ModoMarca.ninguno;
   List<ItinerarioSugerido> _ideas = const [];
   var _elegido = 0;
   var _hoja = 0.42;
@@ -39,7 +44,16 @@ class _PantallaPlanState extends State<PantallaPlan> {
       final captura = estado.captura;
       if (captura == 'opciones' || captura == 'lista' || captura == 'transbordo' || captura == 'recorrido') {
         _hoja = captura == 'lista' ? 0.68 : 0.46;
-        _fijar(_destinoDemo, encuadrar: true);
+        _origen = const _PuntoElegido(punto: centroSantaCruz, nombre: 'Mi ubicación');
+        _destino = const _PuntoElegido(punto: _destinoDemo, nombre: 'Punto en el mapa');
+        _recalcular(encuadrar: true);
+      } else if (captura == 'marcar-origen') {
+        setState(() => _modo = _ModoMarca.origen);
+      } else if (captura == 'elegir') {
+        _origen = _PuntoElegido(punto: estado.ubicacion, nombre: 'Mi ubicación');
+        setState(() => _modo = _ModoMarca.destino);
+      } else if (captura == 'menu-origen') {
+        _abrirMenu(origen: true);
       }
     });
   }
@@ -50,13 +64,35 @@ class _PantallaPlanState extends State<PantallaPlan> {
     super.dispose();
   }
 
-  Coord _origenDe(EstadoKufi estado) => estado.ubicacion;
+  bool get _marcando => _modo != _ModoMarca.ninguno;
 
-  void _fijar(Coord punto, {bool encuadrar = false}) {
+  void _poner({required bool origen, required Coord punto, required String nombre}) {
+    final elegido = _PuntoElegido(punto: punto, nombre: nombre);
+    setState(() {
+      if (origen) {
+        _origen = elegido;
+      } else {
+        _destino = elegido;
+      }
+      _modo = _ModoMarca.ninguno;
+    });
+    _recalcular(encuadrar: true);
+  }
+
+  void _recalcular({bool encuadrar = false}) {
+    final origen = _origen;
+    final destino = _destino;
+    if (origen == null || destino == null) {
+      setState(() {
+        _ideas = const [];
+        _elegido = 0;
+      });
+      return;
+    }
     final estado = KufiScope.of(context);
     final ideas = estado.planificador.proponer(
-      origen: _origenDe(estado),
-      destino: punto,
+      origen: origen.punto,
+      destino: destino.punto,
       tarifaCentavos: estado.tarifas.montoDe(TipoPasaje.adulto),
       radioAndar: 2200,
       limite: 8,
@@ -66,7 +102,6 @@ class _PantallaPlanState extends State<PantallaPlan> {
         return a.metrosCaminando.compareTo(b.metrosCaminando);
       });
     setState(() {
-      _destino = punto;
       _ideas = ideas;
       _elegido = 0;
     });
@@ -79,19 +114,63 @@ class _PantallaPlanState extends State<PantallaPlan> {
 
   void _limpiar() {
     setState(() {
+      _origen = null;
       _destino = null;
       _ideas = const [];
       _elegido = 0;
+      _modo = _ModoMarca.ninguno;
     });
   }
 
-  void _intercambiar(EstadoKufi estado) {
+  void _intercambiar() {
+    final origen = _origen;
     final destino = _destino;
-    if (destino == null) return;
-    final origen = _origenDe(estado);
-    estado.ubicacion = destino;
-    estado.ubicacionEsEjemplo = true;
-    _fijar(origen, encuadrar: true);
+    if (origen == null || destino == null) return;
+    setState(() {
+      _origen = destino;
+      _destino = origen;
+    });
+    _recalcular(encuadrar: true);
+  }
+
+  Future<void> _abrirMenu({required bool origen}) async {
+    final estado = KufiScope.of(context);
+    final resultado = await showModalBottomSheet<_ResultadoMenu>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => _MenuLugar(
+        titulo: origen ? 'Origen' : 'Destino',
+        gpsDisponible: !estado.ubicacionEsEjemplo,
+      ),
+    );
+    if (!mounted || resultado == null) return;
+    if (resultado.lugar != null) {
+      _poner(origen: origen, punto: resultado.lugar!.punto, nombre: resultado.lugar!.nombre);
+      return;
+    }
+    if (resultado.marcarEnMapa) {
+      setState(() => _modo = origen ? _ModoMarca.origen : _ModoMarca.destino);
+      return;
+    }
+    await estado.refrescarUbicacion();
+    if (!mounted) return;
+    if (estado.ubicacionEsEjemplo) {
+      setState(() => _modo = origen ? _ModoMarca.origen : _ModoMarca.destino);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(origen ? 'No hay GPS. Marcá el origen en el mapa.' : 'No hay GPS. Marcá el destino en el mapa.'),
+        ),
+      );
+      return;
+    }
+    _poner(origen: origen, punto: estado.ubicacion, nombre: 'Mi ubicación');
+  }
+
+  void _confirmarMarca() {
+    final origen = _modo == _ModoMarca.origen;
+    _poner(origen: origen, punto: _centro, nombre: 'Punto en el mapa');
   }
 
   void _encuadrar(ItinerarioSugerido idea) {
@@ -128,9 +207,9 @@ class _PantallaPlanState extends State<PantallaPlan> {
   @override
   Widget build(BuildContext context) {
     final estado = KufiScope.of(context);
-    final origen = _origenDe(estado);
+    final origen = _origen?.punto ?? estado.ubicacion;
     final idea = _idea;
-    final eligiendo = _destino == null;
+    final listo = _origen != null && _destino != null && !_marcando;
     return Scaffold(
       body: Stack(
         children: [
@@ -143,7 +222,7 @@ class _PantallaPlanState extends State<PantallaPlan> {
               maxZoom: 18,
               backgroundColor: const Color(0xFFE7E2D6),
               onTap: (tap, punto) {
-                if (!eligiendo) return;
+                if (!_marcando) return;
                 final marcado = Coord(punto.latitude, punto.longitude);
                 _centro = marcado;
                 _mapa.move(punto, _mapa.camera.zoom);
@@ -160,15 +239,19 @@ class _PantallaPlanState extends State<PantallaPlan> {
               ),
               PolylineLayer(polylines: _red(estado, atenuar: idea != null)),
               if (idea != null) PolylineLayer(polylines: _viaje(idea)),
-              MarkerLayer(markers: _marcas(origen, idea)),
+              MarkerLayer(markers: _marcas(estado.ubicacion, idea)),
             ],
           ),
-          if (eligiendo)
-            const IgnorePointer(
+          if (_marcando)
+            IgnorePointer(
               child: Center(
                 child: Padding(
-                  padding: EdgeInsets.only(bottom: 36),
-                  child: Icon(Icons.location_on, size: 54, color: Color(0xFFE23B3B)),
+                  padding: const EdgeInsets.only(bottom: 36),
+                  child: Icon(
+                    Icons.location_on,
+                    size: 54,
+                    color: _modo == _ModoMarca.origen ? ColoresKufi.verde : const Color(0xFFE23B3B),
+                  ),
                 ),
               ),
             ),
@@ -180,19 +263,16 @@ class _PantallaPlanState extends State<PantallaPlan> {
           ),
           Positioned(
             left: 8,
-            bottom: eligiendo ? 108 : 16,
+            bottom: _marcando || !listo ? 108 : 16,
             child: const Text(
               '© colaboradores de OpenStreetMap',
               style: TextStyle(fontSize: 11, color: Color(0xFF3C3C3C)),
             ),
           ),
-          if (eligiendo)
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 16,
-              child: _barraFijar(),
-            )
+          if (_marcando)
+            Positioned(left: 12, right: 12, bottom: 16, child: _barraMarcar())
+          else if (!listo)
+            Positioned(left: 12, right: 12, bottom: 16, child: _barraGuia())
           else
             DraggableScrollableSheet(
               initialChildSize: _hoja,
@@ -200,7 +280,7 @@ class _PantallaPlanState extends State<PantallaPlan> {
               maxChildSize: 0.74,
               builder: (context, scroll) => _hojaOpciones(estado, origen, scroll),
             ),
-          if (eligiendo)
+          if (_marcando || !listo)
             Positioned(
               right: 12,
               bottom: 108,
@@ -225,7 +305,7 @@ class _PantallaPlanState extends State<PantallaPlan> {
   }
 
   Widget _tarjeta(EstadoKufi estado, Coord origen) {
-    final destino = _destino;
+    final destino = _destino?.punto;
     return Material(
       elevation: 8,
       borderRadius: BorderRadius.circular(22),
@@ -237,7 +317,9 @@ class _PantallaPlanState extends State<PantallaPlan> {
           children: [
             IconButton(
               tooltip: 'Volver',
-              onPressed: destino == null ? null : _limpiar,
+              onPressed: _marcando
+                  ? () => setState(() => _modo = _ModoMarca.ninguno)
+                  : (_origen == null && _destino == null ? null : _limpiar),
               icon: const Icon(Icons.arrow_back),
             ),
             Expanded(
@@ -249,15 +331,21 @@ class _PantallaPlanState extends State<PantallaPlan> {
                       const Icon(Icons.circle, size: 14, color: ColoresKufi.verde),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Origen · ${_coord(origen)}',
-                              style: const TextStyle(fontSize: 12, color: ColoresKufi.textoSuave),
-                            ),
-                            const Text('Mi ubicación', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-                          ],
+                        child: InkWell(
+                          onTap: () => _abrirMenu(origen: true),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _origen == null ? 'Origen' : 'Origen · ${_coord(_origen!.punto)}',
+                                style: const TextStyle(fontSize: 12, color: ColoresKufi.textoSuave),
+                              ),
+                              Text(
+                                _origen?.nombre ?? 'Elegí el origen',
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       IconButton(
@@ -275,26 +363,29 @@ class _PantallaPlanState extends State<PantallaPlan> {
                       color: const Color(0xFFE7F6EE),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.location_on, size: 18, color: Color(0xFFE23B3B)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                destino == null ? 'Destino' : 'Destino · ${_coord(destino)}',
-                                style: const TextStyle(fontSize: 12, color: ColoresKufi.textoSuave),
-                              ),
-                              Text(
-                                destino == null ? 'Toca el mapa para marcarlo' : 'Punto marcado en el mapa',
-                                style: const TextStyle(fontWeight: FontWeight.w800),
-                              ),
-                            ],
+                    child: InkWell(
+                      onTap: () => _abrirMenu(origen: false),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.location_on, size: 18, color: Color(0xFFE23B3B)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  destino == null ? 'Destino' : 'Destino · ${_coord(destino)}',
+                                  style: const TextStyle(fontSize: 12, color: ColoresKufi.textoSuave),
+                                ),
+                                Text(
+                                  _destino?.nombre ?? 'Elegí el destino',
+                                  style: const TextStyle(fontWeight: FontWeight.w800),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -304,7 +395,7 @@ class _PantallaPlanState extends State<PantallaPlan> {
               children: [
                 IconButton(
                   tooltip: 'Intercambiar',
-                  onPressed: destino == null ? null : () => _intercambiar(estado),
+                  onPressed: _origen == null || _destino == null ? null : _intercambiar,
                   icon: const Icon(Icons.swap_vert, color: ColoresKufi.verde),
                 ),
                 TextButton.icon(
@@ -320,20 +411,21 @@ class _PantallaPlanState extends State<PantallaPlan> {
     );
   }
 
-  Widget _barraFijar() {
+  Widget _barraGuia() {
+    final faltaOrigen = _origen == null;
     return Material(
       color: const Color(0xFF0C3B22),
       borderRadius: BorderRadius.circular(18),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
         child: Row(
           children: [
-            const Icon(Icons.touch_app, color: Colors.white),
+            const Icon(Icons.route, color: Colors.white),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Mueve el mapa o tócalo a dónde quieres llegar.',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                faltaOrigen ? 'Primero elegí de dónde salís. Te sugerimos tu ubicación.' : 'Ahora marcá a dónde vas.',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
               ),
             ),
             const SizedBox(width: 8),
@@ -343,8 +435,42 @@ class _PantallaPlanState extends State<PantallaPlan> {
                 foregroundColor: const Color(0xFF0C3B22),
                 shape: const StadiumBorder(),
               ),
-              onPressed: () => _fijar(_centro, encuadrar: true),
-              child: const Text('Fijar destino'),
+              onPressed: () => _abrirMenu(origen: faltaOrigen),
+              child: Text(faltaOrigen ? 'Elegir origen' : 'Elegir destino'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _barraMarcar() {
+    final origen = _modo == _ModoMarca.origen;
+    final color = origen ? ColoresKufi.verde : const Color(0xFFE23B3B);
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(18),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+        child: Row(
+          children: [
+            const Icon(Icons.touch_app, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                origen ? 'Tocá el mapa para marcar tu ORIGEN' : 'Tocá el mapa para marcar tu DESTINO',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: color,
+                shape: const StadiumBorder(),
+              ),
+              onPressed: _confirmarMarca,
+              child: Text(origen ? 'Confirmar origen' : 'Confirmar destino'),
             ),
           ],
         ),
@@ -353,7 +479,7 @@ class _PantallaPlanState extends State<PantallaPlan> {
   }
 
   Widget _hojaOpciones(EstadoKufi estado, Coord origen, ScrollController scroll) {
-    final destino = _destino ?? origen;
+    final destino = _destino?.punto ?? origen;
     final recta = haversineMetros(origen, destino);
     return Material(
       elevation: 16,
@@ -383,7 +509,7 @@ class _PantallaPlanState extends State<PantallaPlan> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'No hay trufis muy cerca: toca caminar un poco más.',
+                  'No hay trufis muy cerca: tocá caminar un poco más.',
                   style: TextStyle(color: Color(0xFFB86E00), fontWeight: FontWeight.w600),
                 ),
               ),
@@ -602,10 +728,8 @@ class _PantallaPlanState extends State<PantallaPlan> {
         ),
       ),
     ];
-    if (_destino != null) {
-      marcas.add(_pin(_destino!, const Color(0xFFE23B3B), 'B'));
-      marcas.add(_pin(origen, ColoresKufi.verde, 'A'));
-    }
+    if (_origen != null) marcas.add(_pin(_origen!.punto, ColoresKufi.verde, 'A'));
+    if (_destino != null) marcas.add(_pin(_destino!.punto, const Color(0xFFE23B3B), 'B'));
     if (idea == null) return marcas;
     for (final tramo in idea.tramos) {
       if (tramo.aPie || tramo.puntos.length < 2) continue;
@@ -670,5 +794,144 @@ class _PantallaPlanState extends State<PantallaPlan> {
     final resto = total % 60;
     if (resto == 0) return '$horas h';
     return '$horas h $resto min';
+  }
+}
+
+enum _ModoMarca { ninguno, origen, destino }
+
+class _PuntoElegido {
+  const _PuntoElegido({required this.punto, required this.nombre});
+
+  final Coord punto;
+  final String nombre;
+}
+
+class _ResultadoMenu {
+  const _ResultadoMenu.gps() : marcarEnMapa = false, lugar = null;
+  const _ResultadoMenu.mapa() : marcarEnMapa = true, lugar = null;
+  const _ResultadoMenu.lugar(this.lugar) : marcarEnMapa = false;
+
+  final bool marcarEnMapa;
+  final Lugar? lugar;
+}
+
+class _MenuLugar extends StatefulWidget {
+  const _MenuLugar({required this.titulo, required this.gpsDisponible});
+
+  final String titulo;
+  final bool gpsDisponible;
+
+  @override
+  State<_MenuLugar> createState() => _MenuLugarState();
+}
+
+class _MenuLugarState extends State<_MenuLugar> {
+  final _texto = TextEditingController();
+  final _buscador = BuscadorLugares();
+  List<Lugar> _lugares = lugaresSantaCruz.take(5).toList();
+  Timer? _espera;
+
+  @override
+  void dispose() {
+    _espera?.cancel();
+    _texto.dispose();
+    super.dispose();
+  }
+
+  void _buscar(String texto) {
+    _espera?.cancel();
+    _espera = Timer(const Duration(milliseconds: 350), () async {
+      final lugares = await _buscador.buscar(texto);
+      if (!mounted) return;
+      setState(() => _lugares = lugares);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final teclado = MediaQuery.viewInsetsOf(context).bottom;
+    return ListView(
+      shrinkWrap: true,
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + teclado),
+      children: [
+        Center(
+          child: Container(
+            width: 42,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(color: ColoresKufi.superficie3, borderRadius: BorderRadius.circular(4)),
+          ),
+        ),
+        Text(widget.titulo, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+        const SizedBox(height: 8),
+        _opcion(
+          icono: Icons.my_location,
+          color: ColoresKufi.verde,
+          titulo: 'Usar mi ubicación actual',
+          detalle: widget.gpsDisponible ? 'El GPS de este teléfono' : 'Si no hay GPS, te llevamos a marcar en el mapa',
+          onTap: () => Navigator.pop(context, const _ResultadoMenu.gps()),
+        ),
+        const SizedBox(height: 8),
+        _opcion(
+          icono: Icons.map_outlined,
+          color: widget.titulo == 'Origen' ? ColoresKufi.verde : const Color(0xFFE23B3B),
+          titulo: 'Marcar en el mapa',
+          detalle: widget.titulo == 'Origen' ? 'Tocá el punto verde de salida' : 'Tocá el punto rojo de llegada',
+          onTap: () => Navigator.pop(context, const _ResultadoMenu.mapa()),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _texto,
+          decoration: const InputDecoration(
+            prefixIcon: Icon(Icons.search),
+            hintText: 'Buscá un lugar',
+            border: OutlineInputBorder(),
+          ),
+          onChanged: _buscar,
+        ),
+        for (final lugar in _lugares.take(4))
+          ListTile(
+            leading: const Icon(Icons.place_outlined),
+            title: Text(lugar.nombre),
+            subtitle: Text(lugar.detalle),
+            onTap: () => Navigator.pop(context, _ResultadoMenu.lugar(lugar)),
+          ),
+      ],
+    );
+  }
+
+  Widget _opcion({
+    required IconData icono,
+    required Color color,
+    required String titulo,
+    required String detalle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: const Color(0xFFF6F6F6),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              CircleAvatar(backgroundColor: color, child: Icon(icono, color: Colors.white)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(titulo, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    Text(detalle, style: const TextStyle(color: ColoresKufi.textoSuave)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
