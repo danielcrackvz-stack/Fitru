@@ -44,7 +44,8 @@ El archivo queda en `apps/kufi/build/app/outputs/flutter-apk/app-debug.apk`.
 Cada push a `main` (y cada pull request) arma el APK de depuración y lo publica como artifact **kufi-apk-debug**.
 
 - Corridas: https://github.com/danielcrackvz-stack/Fitru/actions/workflows/ci.yml
-- Hay que entrar a la corrida verde más reciente y bajar el artifact `kufi-apk-debug`.
+- APK de esta versión (artifact `kufi-apk-debug`, corrida verde): https://github.com/danielcrackvz-stack/Fitru/actions/runs/45063395644/artifacts/14769873115
+- Si esa corrida ya no está, entra a la verde más reciente de `main` y baja el mismo artifact.
 
 ## Cuentas de demostración
 
