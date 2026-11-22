@@ -219,6 +219,32 @@ class _PantallaViajeState extends State<PantallaViaje> with SingleTickerProvider
     );
   }
 
+  List<Marker> _flechas(ItinerarioSugerido idea) {
+    final marcas = <Marker>[];
+    for (final tramo in idea.tramos) {
+      if (tramo.aPie || tramo.puntos.length < 2) continue;
+      final ultimo = tramo.puntos.length - 1;
+      for (final fraccion in const [0.33, 0.66]) {
+        final indice = (fraccion * ultimo).floor().clamp(0, ultimo - 1);
+        final a = tramo.puntos[indice];
+        final b = tramo.puntos[indice + 1];
+        final rumbo = math.atan2(b.lon - a.lon, b.lat - a.lat);
+        marcas.add(
+          Marker(
+            point: LatLng(a.lat, a.lon),
+            width: 22,
+            height: 22,
+            child: Transform.rotate(
+              angle: rumbo,
+              child: const Icon(Icons.arrow_upward, size: 16, color: Colors.white),
+            ),
+          ),
+        );
+      }
+    }
+    return marcas;
+  }
+
   Widget _mapaDe(ItinerarioSugerido idea) {
     final lineas = <Polyline>[
       for (final tramo in idea.tramos)
@@ -259,6 +285,7 @@ class _PantallaViajeState extends State<PantallaViaje> with SingleTickerProvider
                     height: 28,
                     child: const Icon(Icons.navigation, color: ColoresKufi.verde),
                   ),
+                  ..._flechas(idea),
                 ],
               ),
             ],

@@ -63,6 +63,16 @@ En el perfil se cambia de rol, se simula la falta de internet y se simula un lec
 
 El mapa dibuja las 250 polilíneas con el color del panter. La ida va continua y la vuelta punteada. La búsqueda ignora tildes (`piyos`, `1er anillo`). Si no hay permiso de ubicación, el centro es Santa Cruz. El bus que se mueve sobre la línea es una posición simulada.
 
+Desde el mapa: «Explorar» abre el listado con zona, sindicato y favoritos (`/pasajero/rutas`). «Cómo llego» arma un viaje directo o con un transbordo (`/pasajero/viaje`) y deja pagar con Subí al subir. Un toque largo fija el pin. Los radios son 100, 300 y 500 m. En la plaza el trazo más cercano queda a unos 500 m, así que a veces hay que ampliar el radio o mover el pin.
+
+Para un ruteador futuro:
+
+```bash
+python3 tools/exportar_gtfs.py
+```
+
+Las paradas de ese GTFS son sintéticas, cada 300 m. El detalle y el límite de cobertura (sin Pentaguazú, Monte Carmelo ni Satélite Norte) están en [docs/IMPLEMENTACION_INDEPENDIENTE.md](docs/IMPLEMENTACION_INDEPENDIENTE.md).
+
 El QR del chofer está firmado, vence y sirve una sola vez. En Android el chofer también anuncia por Bluetooth y el pasajero filtra por la señal. NFC es opcional y no existe en iPhone. Sin conexión el pasaje se guarda y se envía después, sin cobrarse dos veces.
 
 ## Base de datos (cuando haga falta)
