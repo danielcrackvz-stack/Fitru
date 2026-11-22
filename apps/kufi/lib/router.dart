@@ -221,7 +221,17 @@ class PantallaCaptura extends StatelessWidget {
       'registro' => const PantallaRegistro(),
       'verificacion' => const PantallaVerificacion(),
       'inicio' => const PantallaInicio(),
-      'mapa' || 'elegir' || 'opciones' || 'lista' || 'recorrido' || 'a-donde' || 'menu-mapa' || 'transbordo' => const PantallaPlan(),
+      'mapa' ||
+      'elegir' ||
+      'opciones' ||
+      'lista' ||
+      'recorrido' ||
+      'a-donde' ||
+      'menu-mapa' ||
+      'menu-origen' ||
+      'marcar-origen' ||
+      'transbordo' =>
+        const PantallaPlan(),
       'recarga' => const PantallaRecarga(),
       'perfil' => const PantallaPerfil(),
       'buscar' => const PantallaBuscar(),
@@ -248,6 +258,8 @@ class PantallaCaptura extends StatelessWidget {
       'recorrido',
       'a-donde',
       'menu-mapa',
+      'menu-origen',
+      'marcar-origen',
       'transbordo',
     };
     if (pantalla == 'inicio' ||
