@@ -48,11 +48,11 @@ Cada push a `main` publica dos artifacts:
 - `kufi-apk-debug`: un solo APK de depuración, pesado.
 - `subi-apk-release`: `app-arm64-v8a-release.apk`, `app-armeabi-v7a-release.apk` y `app-x86_64-release.apk`.
 
-La demo para el celular es el prerelease v0.2.0, con `Subi-v0.2.0-arm64.apk` y `Subi-v0.2.0-armv7.apk`:
+La demo para el celular es el prerelease v0.3.0, con `Subi-v0.3.0-arm64.apk` y `Subi-v0.3.0-armv7.apk`:
 
-https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.2.0-demo
+https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.3.0-demo
 
-La v0.1.0 sigue en https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.1.0-demo
+La v0.2.0 sigue en https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.2.0-demo
 
 Corridas: https://github.com/danielcrackvz-stack/Fitru/actions/workflows/ci.yml
 
@@ -73,9 +73,9 @@ En el perfil se cambia de rol, se simula la falta de internet y se simula un lec
 
 El mapa dibuja las 250 polilíneas con el color del panter. La ida va continua y la vuelta punteada. La búsqueda ignora tildes (`piyos`, `1er anillo`). Si no hay permiso de ubicación, el centro es Santa Cruz. El bus que se mueve sobre la línea es una posición simulada.
 
-Al entrar como pasajero la pantalla es el mapa, con la tarjeta **¿A dónde vas?**. El origen arranca en el GPS (o en el centro de Santa Cruz) y el destino se elige buscando, tocando el mapa o con Casa, Trabajo y U. Abajo salen primero las líneas directas y después las de un transbordo. «Pagar al subir» abre el cobro con esa línea. La comparación con Cruzero y Trufi está en [docs/COMPARATIVA.md](docs/COMPARATIVA.md).
+Inicio es la billetera: saldo, recarga, pago por NFC, Bluetooth o QR, y los últimos viajes. Una tarjeta chica, «¿A dónde vas?», abre la pestaña Mapa.
 
-«Explorar», en la pestaña Mapa, lista las líneas por zona y sindicato.
+En Mapa el origen es «Mi ubicación». El destino se marca moviendo el mapa o tocándolo, y con «Fijar destino». La hoja de abajo lista las opciones por tiempo, con la caminata y el tramo de cada línea. La comparación con Cruzero y Trufi está en [docs/COMPARATIVA.md](docs/COMPARATIVA.md).
 
 Para un ruteador futuro:
 

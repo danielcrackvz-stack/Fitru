@@ -101,11 +101,11 @@ GoRouter crearRouter(EstadoKufi estado) {
         routes: [
           GoRoute(
             path: '/pasajero/inicio',
-            builder: (context, state) => const PantallaPlan(),
+            builder: (context, state) => const PantallaInicio(),
           ),
           GoRoute(
             path: '/pasajero/mapa',
-            builder: (context, state) => const PantallaMapa(),
+            builder: (context, state) => const PantallaPlan(),
           ),
           GoRoute(
             path: '/pasajero/recarga',
@@ -220,8 +220,8 @@ class PantallaCaptura extends StatelessWidget {
       'ingreso' => const PantallaIngreso(),
       'registro' => const PantallaRegistro(),
       'verificacion' => const PantallaVerificacion(),
-      'inicio' || 'a-donde' || 'menu-mapa' || 'opciones' || 'transbordo' => const PantallaPlan(),
-      'mapa' => const PantallaMapa(),
+      'inicio' => const PantallaInicio(),
+      'mapa' || 'elegir' || 'opciones' || 'lista' || 'recorrido' || 'a-donde' || 'menu-mapa' || 'transbordo' => const PantallaPlan(),
       'recarga' => const PantallaRecarga(),
       'perfil' => const PantallaPerfil(),
       'buscar' => const PantallaBuscar(),
@@ -240,17 +240,23 @@ class PantallaCaptura extends StatelessWidget {
       'turno' => const PantallaTurno(),
       _ => const PantallaInicio(),
     };
+    const deMapa = {
+      'mapa',
+      'elegir',
+      'opciones',
+      'lista',
+      'recorrido',
+      'a-donde',
+      'menu-mapa',
+      'transbordo',
+    };
     if (pantalla == 'inicio' ||
-        pantalla == 'a-donde' ||
-        pantalla == 'menu-mapa' ||
-        pantalla == 'opciones' ||
-        pantalla == 'transbordo' ||
-        pantalla == 'mapa' ||
+        deMapa.contains(pantalla) ||
         pantalla == 'recarga' ||
         pantalla == 'perfil') {
-      final ruta = pantalla == 'mapa' || pantalla == 'recarga' || pantalla == 'perfil'
-          ? '/pasajero/$pantalla'
-          : '/pasajero/inicio';
+      final ruta = deMapa.contains(pantalla)
+          ? '/pasajero/mapa'
+          : '/pasajero/$pantalla';
       return CascaronPasajero(ruta: ruta, child: pagina);
     }
     return pagina;

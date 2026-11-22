@@ -1,26 +1,17 @@
-import 'dart:async';
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:go_router/go_router.dart';
 import 'package:kufi_core/kufi_core.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../alcance.dart';
 import '../../estado/estado_kufi.dart';
 import '../../formato.dart';
-import '../../servicios/busqueda_lugares.dart';
 import '../../servicios/teselas.dart';
 import '../../servicios/ubicacion.dart';
 import '../../tema.dart';
-import '../widgets.dart';
 
-/// Pares del dataset real, los mismos que cubren los tests del planificador.
-const _directoA = Coord(-17.79242, -63.18148);
-const _directoB = Coord(-17.77468, -63.17862);
-const _cambioA = Coord(-17.81137, -63.15961);
-const _cambioB = Coord(-17.81689, -63.11577);
+/// Destino de las capturas del celular, al este del centro.
+const _destinoDemo = Coord(-17.8094, -63.1254);
 
 class PantallaPlan extends StatefulWidget {
   const PantallaPlan({super.key});
@@ -30,26 +21,13 @@ class PantallaPlan extends StatefulWidget {
 }
 
 class _PantallaPlanState extends State<PantallaPlan> {
-  final _origen = TextEditingController(text: 'Mi ubicación');
-  final _destino = TextEditingController();
-  final _buscador = BuscadorLugares();
   final _teselas = ConfigTeselas.desdeEntorno();
   final _mapa = MapController();
-  Coord? _puntoOrigen;
-  Coord? _puntoDestino;
-  var _origenExplicito = false;
-  var _editandoOrigen = false;
-  var _radio = 800.0;
-  List<Lugar> _sugerencias = const [];
+  Coord? _destino;
+  Coord _centro = centroSantaCruz;
   List<ItinerarioSugerido> _ideas = const [];
   var _elegido = 0;
-  Coord? _menu;
-  var _eligiendo = false;
-  var _eligiendoOrigen = false;
-  Coord _centro = centroSantaCruz;
-  var _direccionPin = '';
-  Timer? _debounce;
-  Timer? _geo;
+  var _hoja = 0.42;
 
   @override
   void initState() {
@@ -59,77 +37,61 @@ class _PantallaPlanState extends State<PantallaPlan> {
       final estado = KufiScope.of(context);
       estado.refrescarUbicacion();
       final captura = estado.captura;
-      if (captura == 'menu-mapa') {
-        setState(() => _menu = centroSantaCruz);
-      } else if (captura == 'opciones') {
-        _aplicar(_directoA, '1er anillo sur', origen: true);
-        _aplicar(_directoB, '1er anillo norte', origen: false);
-        _calcular(encuadrar: true);
-      } else if (captura == 'transbordo') {
-        _aplicar(_cambioA, 'Ramada', origen: true);
-        _aplicar(_cambioB, 'Barrio 15 de Mayo', origen: false);
-        _calcular(encuadrar: true, preferirTransbordo: true);
+      if (captura == 'opciones' || captura == 'lista' || captura == 'transbordo' || captura == 'recorrido') {
+        _hoja = captura == 'lista' ? 0.68 : 0.46;
+        _fijar(_destinoDemo, encuadrar: true);
       }
     });
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
-    _geo?.cancel();
-    _origen.dispose();
-    _destino.dispose();
     _mapa.dispose();
     super.dispose();
   }
 
-  Coord _origenEfectivo(EstadoKufi estado) => _puntoOrigen ?? estado.ubicacion;
+  Coord _origenDe(EstadoKufi estado) => estado.ubicacion;
 
-  void _aplicar(Coord punto, String nombre, {required bool origen}) {
+  void _fijar(Coord punto, {bool encuadrar = false}) {
+    final estado = KufiScope.of(context);
+    final ideas = estado.planificador.proponer(
+      origen: _origenDe(estado),
+      destino: punto,
+      tarifaCentavos: estado.tarifas.montoDe(TipoPasaje.adulto),
+      radioAndar: 2200,
+      limite: 8,
+    )..sort((a, b) {
+        final minutos = a.minutos.compareTo(b.minutos);
+        if (minutos != 0) return minutos;
+        return a.metrosCaminando.compareTo(b.metrosCaminando);
+      });
     setState(() {
-      if (origen) {
-        _puntoOrigen = punto;
-        _origenExplicito = true;
-        _origen.text = nombre;
-      } else {
-        _puntoDestino = punto;
-        _destino.text = nombre;
-      }
-      _sugerencias = const [];
-      _menu = null;
+      _destino = punto;
+      _ideas = ideas;
+      _elegido = 0;
+    });
+    if (encuadrar && ideas.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _encuadrar(ideas.first);
+      });
+    }
+  }
+
+  void _limpiar() {
+    setState(() {
+      _destino = null;
+      _ideas = const [];
+      _elegido = 0;
     });
   }
 
-  void _calcular({bool encuadrar = false, bool preferirTransbordo = false}) {
-    final estado = KufiScope.of(context);
-    final destino = _puntoDestino;
-    if (destino == null) {
-      setState(() => _ideas = const []);
-      return;
-    }
-    final ideas = estado.planificador.proponer(
-      origen: _origenEfectivo(estado),
-      destino: destino,
-      tarifaCentavos: estado.tarifas.montoDe(TipoPasaje.adulto),
-      radioAndar: _radio,
-    );
-    var indice = 0;
-    if (preferirTransbordo) {
-      final cambio = ideas.indexWhere((idea) => idea.transbordos > 0);
-      if (cambio >= 0) indice = cambio;
-    }
-    setState(() {
-      _ideas = ideas;
-      _elegido = indice;
-    });
-    if (ideas.isNotEmpty) {
-      estado.elegirItinerario(ideas[indice]);
-      if (encuadrar) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _encuadrar(ideas[indice]);
-        });
-      }
-    }
+  void _intercambiar(EstadoKufi estado) {
+    final destino = _destino;
+    if (destino == null) return;
+    final origen = _origenDe(estado);
+    estado.ubicacion = destino;
+    estado.ubicacionEsEjemplo = true;
+    _fijar(origen, encuadrar: true);
   }
 
   void _encuadrar(ItinerarioSugerido idea) {
@@ -138,67 +100,15 @@ class _PantallaPlanState extends State<PantallaPlan> {
     _mapa.fitCamera(
       CameraFit.coordinates(
         coordinates: [for (final punto in puntos) LatLng(punto.lat, punto.lon)],
-        padding: const EdgeInsets.fromLTRB(36, 210, 36, 280),
+        padding: const EdgeInsets.fromLTRB(28, 200, 28, 320),
         maxZoom: 15,
       ),
     );
   }
 
-  void _buscar(String texto, {required bool origen}) {
-    _editandoOrigen = origen;
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 350), () async {
-      final lugares = await _buscador.buscar(texto);
-      if (!mounted) return;
-      setState(() => _sugerencias = lugares);
-    });
-  }
-
-  void _usarLugar(Lugar lugar) {
-    final estado = KufiScope.of(context);
-    _aplicar(lugar.punto, lugar.nombre, origen: _editandoOrigen);
-    estado.recordarLugar(lugar.nombre, lugar.punto);
-    estado.recordarBusqueda(lugar.nombre);
-    _calcular(encuadrar: true);
-  }
-
-  void _intercambiar(EstadoKufi estado) {
-    final destino = _puntoDestino;
-    if (destino == null) return;
-    final origen = _origenEfectivo(estado);
-    final textoOrigen = _origen.text;
-    setState(() {
-      _puntoOrigen = destino;
-      _puntoDestino = origen;
-      _origenExplicito = true;
-      _origen.text = _destino.text.isEmpty ? 'Destino' : _destino.text;
-      _destino.text = textoOrigen.isEmpty ? 'Mi ubicación' : textoOrigen;
-    });
-    _calcular(encuadrar: true);
-  }
-
-  void _mover(Coord actual, Offset delta, void Function(Coord) aplicar) {
-    try {
-      final pantalla = _mapa.camera.latLngToScreenOffset(LatLng(actual.lat, actual.lon));
-      final nuevo = _mapa.camera.screenOffsetToLatLng(pantalla + delta);
-      aplicar(Coord(nuevo.latitude, nuevo.longitude));
-    } catch (_) {}
-  }
-
-  Future<void> _resolverCentro() async {
-    final punto = _centro;
-    final texto = respaldoDePin(punto);
-    if (mounted) setState(() => _direccionPin = texto);
-    final calle = await _buscador.direccionDe(punto);
-    if (!mounted) return;
-    final movido = (_centro.lat - punto.lat).abs() > 0.0002 || (_centro.lon - punto.lon).abs() > 0.0002;
-    if (movido) return;
-    setState(() => _direccionPin = calle);
-  }
-
-  void _programarDireccion() {
-    _geo?.cancel();
-    _geo = Timer(const Duration(milliseconds: 700), _resolverCentro);
+  void _irAlCentro(Coord punto) {
+    _centro = punto;
+    _mapa.move(LatLng(punto.lat, punto.lon), _mapa.camera.zoom);
   }
 
   ItinerarioSugerido? get _idea {
@@ -206,36 +116,40 @@ class _PantallaPlanState extends State<PantallaPlan> {
     return _ideas[_elegido.clamp(0, _ideas.length - 1)];
   }
 
-  bool get _hayTrufi => _ideas.any((idea) => idea.tramos.any((tramo) => !tramo.aPie));
+  bool get _caminataLarga {
+    for (final idea in _ideas) {
+      for (final tramo in idea.tramos) {
+        if (tramo.aPie && tramo.metros > 800) return true;
+      }
+    }
+    return _ideas.isEmpty && _destino != null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final estado = KufiScope.of(context);
-    final origen = _origenEfectivo(estado);
+    final origen = _origenDe(estado);
     final idea = _idea;
-    final saldo = estado.sesion == null ? 0 : estado.saldoDe(estado.sesion!.id);
+    final eligiendo = _destino == null;
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           FlutterMap(
             mapController: _mapa,
             options: MapOptions(
-              initialCenter: LatLng(estado.ubicacion.lat, estado.ubicacion.lon),
+              initialCenter: LatLng(origen.lat, origen.lon),
               initialZoom: 13,
               minZoom: 11,
               maxZoom: 18,
               backgroundColor: const Color(0xFFE7E2D6),
-              onTap: (tap, punto) => setState(() {
-                _menu = null;
-                _sugerencias = const [];
-              }),
-              onLongPress: (tap, punto) {
-                setState(() => _menu = Coord(punto.latitude, punto.longitude));
+              onTap: (tap, punto) {
+                if (!eligiendo) return;
+                final marcado = Coord(punto.latitude, punto.longitude);
+                _centro = marcado;
+                _mapa.move(punto, _mapa.camera.zoom);
               },
-              onPositionChanged: (camera, tieneGesto) {
+              onPositionChanged: (camera, gesto) {
                 _centro = Coord(camera.center.latitude, camera.center.longitude);
-                if (_eligiendo && tieneGesto) _programarDireccion();
               },
             ),
             children: [
@@ -246,267 +160,191 @@ class _PantallaPlanState extends State<PantallaPlan> {
               ),
               PolylineLayer(polylines: _red(estado, atenuar: idea != null)),
               if (idea != null) PolylineLayer(polylines: _viaje(idea)),
-              MarkerLayer(markers: _pines(estado, origen)),
-              if (idea != null) MarkerLayer(markers: _flechas(idea)),
+              MarkerLayer(markers: _marcas(origen, idea)),
             ],
           ),
-          if (_eligiendo)
+          if (eligiendo)
             const IgnorePointer(
               child: Center(
-                child: Icon(Icons.location_on, size: 46, color: ColoresKufi.verde700),
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 36),
+                  child: Icon(Icons.location_on, size: 54, color: Color(0xFFE23B3B)),
+                ),
               ),
             ),
           Positioned(
-            left: 12,
-            right: 12,
-            top: 8,
-            child: SafeArea(child: _tarjeta(estado, saldo)),
+            left: 10,
+            right: 10,
+            top: 6,
+            child: SafeArea(bottom: false, child: _tarjeta(estado, origen)),
           ),
-          if (_menu != null)
-            Positioned(
-              left: 24,
-              right: 24,
-              top: 230,
-              child: _menuEn(_menu!),
+          Positioned(
+            left: 8,
+            bottom: eligiendo ? 108 : 16,
+            child: const Text(
+              '© colaboradores de OpenStreetMap',
+              style: TextStyle(fontSize: 11, color: Color(0xFF3C3C3C)),
             ),
-          if (_eligiendo)
+          ),
+          if (eligiendo)
             Positioned(
-              left: 16,
-              right: 16,
-              bottom: 24,
-              child: _barraPin(),
+              left: 12,
+              right: 12,
+              bottom: 16,
+              child: _barraFijar(),
             )
-          else if (_puntoDestino != null)
+          else
             DraggableScrollableSheet(
-              initialChildSize: _hayTrufi ? 0.42 : 0.28,
-              minChildSize: 0.16,
-              maxChildSize: 0.78,
-              builder: (context, scroll) => _hoja(estado, scroll),
+              initialChildSize: _hoja,
+              minChildSize: 0.22,
+              maxChildSize: 0.74,
+              builder: (context, scroll) => _hojaOpciones(estado, origen, scroll),
+            ),
+          if (eligiendo)
+            Positioned(
+              right: 12,
+              bottom: 108,
+              child: _botonUbicacion(estado),
             ),
         ],
       ),
     );
   }
 
-  Widget _tarjeta(EstadoKufi estado, int saldo) {
+  Widget _botonUbicacion(EstadoKufi estado) {
     return Material(
-      elevation: 6,
-      borderRadius: BorderRadius.circular(18),
+      elevation: 4,
+      shape: const CircleBorder(),
+      color: Colors.white,
+      child: IconButton(
+        tooltip: 'Mi ubicación',
+        onPressed: () => _irAlCentro(estado.ubicacion),
+        icon: const Icon(Icons.my_location, color: ColoresKufi.verde),
+      ),
+    );
+  }
+
+  Widget _tarjeta(EstadoKufi estado, Coord origen) {
+    final destino = _destino;
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(22),
       color: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.fromLTRB(4, 6, 8, 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Text('¿A dónde vas?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-                const Spacer(),
-                InkWell(
-                  onTap: () => context.go('/pasajero/recarga'),
-                  child: Text(Dinero(saldo).texto, style: const TextStyle(fontWeight: FontWeight.w800, color: ColoresKufi.verde700)),
-                ),
-              ],
+            IconButton(
+              tooltip: 'Volver',
+              onPressed: destino == null ? null : _limpiar,
+              icon: const Icon(Icons.arrow_back),
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
                     children: [
-                      _campo(
-                        controlador: _origen,
-                        icono: Icons.trip_origin,
-                        color: ColoresKufi.verde,
-                        pista: 'Origen',
-                        origen: true,
+                      const Icon(Icons.circle, size: 14, color: ColoresKufi.verde),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Origen · ${_coord(origen)}',
+                              style: const TextStyle(fontSize: 12, color: ColoresKufi.textoSuave),
+                            ),
+                            const Text('Mi ubicación', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                          ],
+                        ),
                       ),
-                      _campo(
-                        controlador: _destino,
-                        icono: Icons.place,
-                        color: ColoresKufi.peligro,
-                        pista: 'Destino',
-                        origen: false,
+                      IconButton(
+                        tooltip: 'Centrar',
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _irAlCentro(origen),
+                        icon: const Icon(Icons.gps_fixed, color: ColoresKufi.verde),
                       ),
                     ],
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Intercambiar',
-                  onPressed: () => _intercambiar(estado),
-                  icon: const Icon(Icons.swap_vert, color: ColoresKufi.verde),
-                ),
-              ],
-            ),
-            if (estado.ubicacionEsEjemplo && !_origenExplicito)
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Sin GPS: el origen es el centro de Santa Cruz.', style: TextStyle(color: ColoresKufi.textoSuave, fontSize: 12)),
-              ),
-            SizedBox(
-              height: 36,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  for (final etiqueta in const ['Casa', 'Trabajo', 'U'])
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: ActionChip(
-                        label: Text(etiqueta),
-                        avatar: Icon(
-                          estado.lugarFijo(etiqueta) == null ? Icons.add_location_alt_outlined : Icons.star,
-                          size: 16,
-                          color: ColoresKufi.verde,
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7F6EE),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 18, color: Color(0xFFE23B3B)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                destino == null ? 'Destino' : 'Destino · ${_coord(destino)}',
+                                style: const TextStyle(fontSize: 12, color: ColoresKufi.textoSuave),
+                              ),
+                              Text(
+                                destino == null ? 'Toca el mapa para marcarlo' : 'Punto marcado en el mapa',
+                                style: const TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                            ],
+                          ),
                         ),
-                        onPressed: () => _chipFijo(estado, etiqueta),
-                      ),
+                      ],
                     ),
-                  for (final reciente in estado.lugaresRecientes.take(4))
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: ActionChip(
-                        label: Text(reciente.nombre),
-                        onPressed: () {
-                          _editandoOrigen = _destino.text.isEmpty;
-                          _usarLugar(Lugar(nombre: reciente.nombre, detalle: 'Reciente', punto: reciente.punto));
-                        },
-                      ),
-                    ),
+                  ),
                 ],
               ),
             ),
-            if (_sugerencias.isNotEmpty)
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 180),
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    for (final lugar in _sugerencias)
-                      ListTile(
-                        dense: true,
-                        title: Text(lugar.nombre),
-                        subtitle: Text(lugar.detalle),
-                        onTap: () => _usarLugar(lugar),
-                      ),
-                  ],
+            Column(
+              children: [
+                IconButton(
+                  tooltip: 'Intercambiar',
+                  onPressed: destino == null ? null : () => _intercambiar(estado),
+                  icon: const Icon(Icons.swap_vert, color: ColoresKufi.verde),
                 ),
-              ),
+                TextButton.icon(
+                  onPressed: _limpiar,
+                  icon: const Icon(Icons.delete_outline, color: Color(0xFFE07A2F), size: 18),
+                  label: const Text('Borrar', style: TextStyle(color: Color(0xFFE07A2F))),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _campo({
-    required TextEditingController controlador,
-    required IconData icono,
-    required Color color,
-    required String pista,
-    required bool origen,
-  }) {
-    return Row(
-      children: [
-        Icon(icono, size: 16, color: color),
-        const SizedBox(width: 6),
-        Expanded(
-          child: TextField(
-            controller: controlador,
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: pista,
-              border: InputBorder.none,
-            ),
-            onTap: () => _editandoOrigen = origen,
-            onChanged: (texto) {
-              if (origen) _origenExplicito = true;
-              _buscar(texto, origen: origen);
-            },
-          ),
-        ),
-        IconButton(
-          tooltip: 'Elegir en el mapa',
-          visualDensity: VisualDensity.compact,
-          onPressed: () {
-            setState(() {
-              _eligiendo = true;
-              _eligiendoOrigen = origen;
-              _sugerencias = const [];
-              _menu = null;
-              _direccionPin = respaldoDePin(_centro);
-            });
-            _resolverCentro();
-          },
-          icon: const Icon(Icons.map_outlined, size: 18),
-        ),
-      ],
-    );
-  }
-
-  void _chipFijo(EstadoKufi estado, String etiqueta) {
-    final guardado = estado.lugarFijo(etiqueta);
-    if (guardado == null) {
-      final punto = _editandoOrigen || _puntoDestino == null ? _origenEfectivo(estado) : _puntoDestino!;
-      estado.guardarLugarFijo(etiqueta, etiqueta, punto);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$etiqueta quedó guardada. Tocá de nuevo para usarla.')));
-      return;
-    }
-    _editandoOrigen = _destino.text.isEmpty;
-    _usarLugar(Lugar(nombre: guardado.nombre, detalle: etiqueta, punto: guardado.punto));
-  }
-
-  Widget _menuEn(Coord punto) {
+  Widget _barraFijar() {
     return Material(
-      elevation: 8,
-      borderRadius: BorderRadius.circular(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.trip_origin, color: ColoresKufi.verde),
-            title: const Text('Desde aquí'),
-            onTap: () {
-              _aplicar(punto, respaldoDePin(punto), origen: true);
-              _calcular(encuadrar: true);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.place, color: ColoresKufi.peligro),
-            title: const Text('Hasta aquí'),
-            onTap: () {
-              _aplicar(punto, respaldoDePin(punto), origen: false);
-              _calcular(encuadrar: true);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _barraPin() {
-    return Material(
-      elevation: 8,
-      borderRadius: BorderRadius.circular(16),
+      color: const Color(0xFF0C3B22),
+      borderRadius: BorderRadius.circular(18),
       child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+        child: Row(
           children: [
-            Text(
-              _eligiendoOrigen ? 'Elegí el origen' : 'Elegí el destino',
-              style: const TextStyle(fontWeight: FontWeight.w800),
+            const Icon(Icons.touch_app, color: Colors.white),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Mueve el mapa o tócalo a dónde quieres llegar.',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
             ),
-            Text(_direccionPin.isEmpty ? 'Mové el mapa' : _direccionPin),
-            const SizedBox(height: 8),
-            BotonKufi(
-              texto: 'Confirmar',
-              onPressed: () {
-                final punto = _centro;
-                final nombre = _direccionPin.isEmpty ? respaldoDePin(punto) : _direccionPin;
-                _aplicar(punto, nombre, origen: _eligiendoOrigen);
-                setState(() => _eligiendo = false);
-                _calcular(encuadrar: true);
-              },
+            const SizedBox(width: 8),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF0C3B22),
+                shape: const StadiumBorder(),
+              ),
+              onPressed: () => _fijar(_centro, encuadrar: true),
+              child: const Text('Fijar destino'),
             ),
           ],
         ),
@@ -514,63 +352,80 @@ class _PantallaPlanState extends State<PantallaPlan> {
     );
   }
 
-  Widget _hoja(EstadoKufi estado, ScrollController scroll) {
+  Widget _hojaOpciones(EstadoKufi estado, Coord origen, ScrollController scroll) {
+    final destino = _destino ?? origen;
+    final recta = haversineMetros(origen, destino);
     return Material(
-      elevation: 12,
+      elevation: 16,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
       color: Colors.white,
-      child: ListView(
-        controller: scroll,
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+      child: Column(
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(color: ColoresKufi.superficie3, borderRadius: BorderRadius.circular(4)),
+          const SizedBox(height: 8),
+          Container(
+            width: 42,
+            height: 4,
+            decoration: BoxDecoration(color: ColoresKufi.superficie3, borderRadius: BorderRadius.circular(4)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${_ideas.length} opciones · ${_km(recta)} en línea recta',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              ),
             ),
           ),
-          if (!_hayTrufi) ...[
-            Text(
-              'No hay un trufi o micro a menos de ${_radio.round()} m a pie.',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-            ),
-            const SizedBox(height: 6),
-            const Text('Probá otro punto o ampliá la caminata. El mapa no cubre el oeste y el noroeste.'),
-            const SizedBox(height: 10),
-            if (_radio < 1500)
-              BotonKufi(
-                texto: 'Ampliar a 1.500 m',
-                onPressed: () {
-                  _radio = 1500;
-                  _calcular(encuadrar: true);
-                },
+          if (_caminataLarga)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'No hay trufis muy cerca: toca caminar un poco más.',
+                  style: TextStyle(color: Color(0xFFB86E00), fontWeight: FontWeight.w600),
+                ),
               ),
-          ] else
-            for (var i = 0; i < _ideas.length; i++)
-              if (_ideas[i].tramos.any((tramo) => !tramo.aPie) || _ideas.length == 1)
-                _opcion(estado, _ideas[i], i == _elegido, () {
-                  setState(() => _elegido = i);
-                  estado.elegirItinerario(_ideas[i]);
-                  _encuadrar(_ideas[i]);
-                }),
+            ),
+          Expanded(
+            child: ListView.builder(
+              controller: scroll,
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+              itemCount: _ideas.length,
+              itemBuilder: (context, indice) {
+                final idea = _ideas[indice];
+                return _tarjetaOpcion(
+                  estado,
+                  idea,
+                  activa: indice == _elegido,
+                  masRapida: indice == 0 && _ideas.length > 1,
+                  alTocar: () {
+                    setState(() => _elegido = indice);
+                    _encuadrar(idea);
+                  },
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _opcion(EstadoKufi estado, ItinerarioSugerido idea, bool activa, VoidCallback alTocar) {
-    final rides = idea.tramos.where((tramo) => !tramo.aPie).toList();
-    final subida = idea.tramos.first.aPie ? idea.tramos.first : null;
-    final bajada = idea.tramos.length > 1 && idea.tramos.last.aPie ? idea.tramos.last : null;
-    final idPrimera = rides.isEmpty ? null : rides.first.routeId;
-    final primera = idPrimera == null ? null : estado.catalogo.porId(idPrimera);
+  Widget _tarjetaOpcion(
+    EstadoKufi estado,
+    ItinerarioSugerido idea,
+    {required bool activa, required bool masRapida, required VoidCallback alTocar}
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
-        color: activa ? ColoresKufi.menta : ColoresKufi.superficie,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: activa ? ColoresKufi.verde : ColoresKufi.superficie2, width: activa ? 1.6 : 1),
+        ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: alTocar,
@@ -582,45 +437,38 @@ class _PantallaPlanState extends State<PantallaPlan> {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    for (final tramo in rides)
-                      Chip(
-                        visualDensity: VisualDensity.compact,
-                        backgroundColor: colorHex(tramo.colorHex ?? '#009048'),
-                        label: Text(
-                          tramo.nombre ?? 'Línea',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                        ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: ColoresKufi.verde, borderRadius: BorderRadius.circular(20)),
+                      child: Text(
+                        'Tiempo total: ${_tiempo(idea.minutos)} · ${idea.transbordos == 0 ? 'Directo' : '${idea.transbordos} transbordo${idea.transbordos == 1 ? '' : 's'}'}',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
                       ),
-                    Text(idea.titulo, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                    if (masRapida)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xFFD9F2E4), borderRadius: BorderRadius.circular(20)),
+                        child: const Text('Más rápida', style: TextStyle(color: ColoresKufi.verde700, fontWeight: FontWeight.w700, fontSize: 12)),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text('${idea.minutos.round()} min en total · ${Dinero(idea.centavos).texto}'),
-                Text(
-                  'Hasta subir ${subida?.metros.round() ?? 0} m (${subida?.minutos.round() ?? 0} min) · '
-                  'desde bajar ${bajada?.metros.round() ?? 0} m (${bajada?.minutos.round() ?? 0} min)',
-                  style: const TextStyle(color: ColoresKufi.textoSuave),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text('${_km(idea.metrosCaminando)} a pie', style: const TextStyle(color: ColoresKufi.textoSuave)),
                 ),
-                if (rides.isNotEmpty)
-                  Text(
-                    rides.map((tramo) => tramo.sindicato?.isNotEmpty == true ? '${tramo.operador} · ${tramo.sindicato}' : (tramo.operador ?? '')).where((t) => t.isNotEmpty).join('  ·  '),
-                    style: const TextStyle(color: ColoresKufi.textoSuave),
-                  ),
-                if (activa && primera != null) ...[
+                const SizedBox(height: 6),
+                _cadena(estado, idea),
+                if (activa) ...[
                   const SizedBox(height: 8),
-                  BotonKufi(
-                    texto: 'Pagar al subir',
-                    onPressed: () {
-                      estado.prepararPago(
-                        ruta: primera,
-                        sentido: rides.first.sentido ?? 'ida',
-                        medio: 'nfc',
-                        subtitulo: 'Línea lista al subir',
-                      );
-                      context.push('/pago/nfc');
-                    },
-                  ),
+                  for (final linea in _detalle(estado, idea))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(linea),
+                    ),
                 ],
               ],
             ),
@@ -628,6 +476,82 @@ class _PantallaPlanState extends State<PantallaPlan> {
         ),
       ),
     );
+  }
+
+  Widget _cadena(EstadoKufi estado, ItinerarioSugerido idea) {
+    final tramos = idea.tramos;
+    return Wrap(
+      spacing: 6,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (var i = 0; i < tramos.length; i++) ...[
+          if (i > 0) const Icon(Icons.arrow_forward, size: 16, color: ColoresKufi.verde),
+          _eslabon(estado, tramos[i]),
+        ],
+      ],
+    );
+  }
+
+  Widget _eslabon(EstadoKufi estado, TramoSugerido tramo) {
+    if (tramo.aPie) {
+      return SizedBox(
+        width: 72,
+        child: Column(
+          children: [
+            const Icon(Icons.directions_walk, color: ColoresKufi.verde700),
+            Text(_metrosCorto(tramo.metros), style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text('${tramo.minutos.round()} min', style: const TextStyle(fontSize: 12, color: ColoresKufi.textoSuave)),
+          ],
+        ),
+      );
+    }
+    final color = colorHex(tramo.colorHex ?? '#009048');
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 96, maxWidth: 220),
+      child: Column(
+        children: [
+          CircleAvatar(radius: 14, backgroundColor: color, child: const Icon(Icons.directions_bus, size: 16, color: Colors.white)),
+          Text(
+            tramo.nombre ?? 'Trufi',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            '${_metrosCorto(tramo.metros)} · ${tramo.minutos.round()} min',
+            style: const TextStyle(fontSize: 12, color: ColoresKufi.textoSuave),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<String> _detalle(EstadoKufi estado, ItinerarioSugerido idea) {
+    final lineas = <String>[];
+    for (var i = 0; i < idea.tramos.length; i++) {
+      final tramo = idea.tramos[i];
+      final antes = idea.tramos.take(i).any((otro) => !otro.aPie);
+      final despues = idea.tramos.skip(i + 1).any((otro) => !otro.aPie);
+      if (tramo.aPie) {
+        final cuanto = '${_metrosCorto(tramo.metros)} (${tramo.minutos.round()} min)';
+        if (!antes && despues) {
+          lineas.add('Camina $cuanto hasta tomar el trufi');
+        } else if (antes && despues) {
+          lineas.add('Transbordo: camina $cuanto');
+        } else if (antes) {
+          lineas.add('Bájate y camina $cuanto al destino');
+        } else {
+          lineas.add('Camina $cuanto');
+        }
+        continue;
+      }
+      final ruta = tramo.routeId == null ? null : estado.catalogo.porId(tramo.routeId!);
+      final zona = ruta?.tramo(tramo.sentido ?? 'ida')?.zonaDestino ?? '';
+      final hacia = zona.isEmpty ? '' : ' hacia $zona';
+      final nombre = tramo.nombre ?? 'Trufi';
+      lineas.add('$nombre$hacia · ${_metrosCorto(tramo.metros)} · ${tramo.minutos.round()} min');
+    }
+    return lineas;
   }
 
   List<Polyline<Object>> _red(EstadoKufi estado, {required bool atenuar}) {
@@ -638,8 +562,8 @@ class _PantallaPlanState extends State<PantallaPlan> {
         salida.add(
           Polyline(
             points: [for (final punto in tramo.puntos) LatLng(punto.lat, punto.lon)],
-            strokeWidth: atenuar ? 1.4 : 2.2,
-            color: colorHex(ruta.colorHex, atenuar ? 0.12 : 0.45),
+            strokeWidth: atenuar ? 1.2 : 2,
+            color: colorHex(ruta.colorHex, atenuar ? 0.1 : 0.4),
           ),
         );
       }
@@ -656,82 +580,95 @@ class _PantallaPlanState extends State<PantallaPlan> {
         if (tramo.puntos.length >= 2)
           Polyline(
             points: [for (final punto in tramo.puntos) LatLng(punto.lat, punto.lon)],
-            strokeWidth: tramo.aPie ? 3 : 6,
+            strokeWidth: tramo.aPie ? 4 : 6,
             color: tramo.aPie ? const Color(0xFF5E665F) : colorHex(tramo.colorHex ?? '#009048'),
-            pattern: tramo.aPie ? StrokePattern.dashed(segments: const [8, 8]) : const StrokePattern.solid(),
+            pattern: tramo.aPie ? StrokePattern.dashed(segments: const [8, 7]) : const StrokePattern.solid(),
           ),
     ];
   }
 
-  List<Marker> _pines(EstadoKufi estado, Coord origen) {
-    return [
-      _pin(origen, 'A', ColoresKufi.verde, (delta) {
-        _mover(origen, delta, (punto) {
-          setState(() {
-            _puntoOrigen = punto;
-            _origenExplicito = true;
-            _origen.text = respaldoDePin(punto);
-          });
-        });
-      }, () => _calcular(encuadrar: false)),
-      if (_puntoDestino != null)
-        _pin(_puntoDestino!, 'B', ColoresKufi.peligro, (delta) {
-          final actual = _puntoDestino!;
-          _mover(actual, delta, (punto) {
-            setState(() {
-              _puntoDestino = punto;
-              _destino.text = respaldoDePin(punto);
-            });
-          });
-        }, () => _calcular(encuadrar: false)),
+  List<Marker> _marcas(Coord origen, ItinerarioSugerido? idea) {
+    final marcas = <Marker>[
+      Marker(
+        point: LatLng(origen.lat, origen.lon),
+        width: 18,
+        height: 18,
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF2F6BFF),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+          ),
+        ),
+      ),
     ];
+    if (_destino != null) {
+      marcas.add(_pin(_destino!, const Color(0xFFE23B3B), 'B'));
+      marcas.add(_pin(origen, ColoresKufi.verde, 'A'));
+    }
+    if (idea == null) return marcas;
+    for (final tramo in idea.tramos) {
+      if (tramo.aPie || tramo.puntos.length < 2) continue;
+      final color = colorHex(tramo.colorHex ?? '#009048');
+      marcas.add(
+        Marker(
+          point: LatLng(tramo.puntos.first.lat, tramo.puntos.first.lon),
+          width: 28,
+          height: 28,
+          child: CircleAvatar(backgroundColor: color, child: const Icon(Icons.directions_bus, size: 16, color: Colors.white)),
+        ),
+      );
+      final fin = tramo.puntos.last;
+      marcas.add(
+        Marker(
+          point: LatLng(fin.lat, fin.lon),
+          width: 26,
+          height: 26,
+          child: const Icon(Icons.flag, color: ColoresKufi.verde800),
+        ),
+      );
+    }
+    return marcas;
   }
 
-  Marker _pin(Coord punto, String letra, Color color, void Function(Offset delta) alMover, VoidCallback alSoltar) {
+  Marker _pin(Coord punto, Color color, String letra) {
     return Marker(
       point: LatLng(punto.lat, punto.lon),
       width: 36,
       height: 36,
-      child: GestureDetector(
-        onPanUpdate: (detalle) => alMover(detalle.delta),
-        onPanEnd: (_) => alSoltar(),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
+      alignment: Alignment.topCenter,
+      child: Column(
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+            child: Text(letra, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12)),
           ),
-          child: Center(
-            child: Text(letra, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-          ),
-        ),
+        ],
       ),
     );
   }
 
-  List<Marker> _flechas(ItinerarioSugerido idea) {
-    final marcas = <Marker>[];
-    for (final tramo in idea.tramos) {
-      if (tramo.aPie || tramo.puntos.length < 2) continue;
-      final ultimo = tramo.puntos.length - 1;
-      for (final fraccion in const [0.35, 0.7]) {
-        final indice = (fraccion * ultimo).floor().clamp(0, ultimo - 1);
-        final a = tramo.puntos[indice];
-        final b = tramo.puntos[indice + 1];
-        final rumbo = math.atan2(b.lon - a.lon, b.lat - a.lat);
-        marcas.add(
-          Marker(
-            point: LatLng(a.lat, a.lon),
-            width: 22,
-            height: 22,
-            child: Transform.rotate(
-              angle: rumbo,
-              child: const Icon(Icons.navigation, size: 18, color: Colors.white),
-            ),
-          ),
-        );
-      }
-    }
-    return marcas;
+  String _coord(Coord punto) => '${punto.lat.toStringAsFixed(4)}, ${punto.lon.toStringAsFixed(4)}';
+
+  String _km(double metros) {
+    final texto = (metros / 1000).toStringAsFixed(1).replaceAll('.', ',');
+    return '$texto km';
+  }
+
+  String _metrosCorto(double metros) {
+    if (metros < 950) return '${metros.round()} m';
+    return _km(metros);
+  }
+
+  String _tiempo(double minutos) {
+    final total = minutos.round();
+    if (total < 60) return '$total min';
+    final horas = total ~/ 60;
+    final resto = total % 60;
+    if (resto == 0) return '$horas h';
+    return '$horas h $resto min';
   }
 }

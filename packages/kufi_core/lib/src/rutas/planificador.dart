@@ -251,8 +251,8 @@ class PlanificadorViajes {
   }
 
   List<ItinerarioSugerido> _conTransbordo(Coord origen, Coord destino, int tarifa, double radio) {
-    final salidas = _mejoresCercanas(origen, true, radio);
-    final llegadas = _mejoresCercanas(destino, false, radio);
+    final salidas = _hacia(origen, destino, radio, true);
+    final llegadas = _hacia(destino, origen, radio, false);
     final salida = <ItinerarioSugerido>[];
     for (final subida in salidas) {
       for (final bajada in llegadas) {
@@ -260,30 +260,47 @@ class PlanificadorViajes {
         final puente = _puente(subida, bajada);
         if (puente == null) continue;
         salida.add(_armarTransbordo(origen, destino, subida, puente.$1, puente.$2, bajada, tarifa));
-        if (salida.length > 8) return salida;
+        if (salida.length >= 12) return salida;
       }
     }
     return salida;
   }
 
-  List<_Muestra> _mejoresCercanas(Coord punto, bool esOrigen, double radio) {
-    final mejor = <String, _Muestra>{};
+  /// Líneas que se acercan al otro punto, no solo las más pegadas al pin.
+  List<_Muestra> _hacia(Coord aqui, Coord alla, double radio, bool esSubida) {
+    final grupos = <String, _Muestra>{};
     final distancia = <String, double>{};
-    for (final muestra in _cerca(punto, radio)) {
-      if (esOrigen && muestra.metros > muestra.metrosTotales * 0.92) continue;
-      if (!esOrigen && muestra.metros < muestra.metrosTotales * 0.08) continue;
+    for (final muestra in _cerca(aqui, radio)) {
+      if (esSubida && muestra.metros > muestra.metrosTotales * 0.92) continue;
+      if (!esSubida && muestra.metros < muestra.metrosTotales * 0.08) continue;
       final clave = '${muestra.routeId}|${muestra.sentido}';
-      final metros = haversineMetros(punto, muestra.punto);
+      final metros = haversineMetros(aqui, muestra.punto);
       final previa = distancia[clave];
       if (previa == null || metros < previa) {
         distancia[clave] = metros;
-        mejor[clave] = muestra;
+        grupos[clave] = muestra;
       }
     }
-    final lista = mejor.values.toList()
-      ..sort((a, b) => distancia['${a.routeId}|${a.sentido}']!.compareTo(distancia['${b.routeId}|${b.sentido}']!));
-    if (lista.length <= 8) return lista;
-    return lista.sublist(0, 8);
+    final recta = haversineMetros(aqui, alla);
+    final score = <_Muestra, double>{};
+    final ranked = <_Muestra>[];
+    for (final entrada in grupos.entries) {
+      final muestra = entrada.value;
+      final linea = _porLinea[entrada.key] ?? const <_Muestra>[];
+      var mejor = haversineMetros(muestra.punto, alla);
+      for (final otro in linea) {
+        final sirve = esSubida ? otro.orden > muestra.orden : otro.orden < muestra.orden;
+        if (!sirve) continue;
+        final lejos = haversineMetros(otro.punto, alla);
+        if (lejos < mejor) mejor = lejos;
+      }
+      if (mejor > recta - 300) continue;
+      score[muestra] = distancia[entrada.key]! + mejor;
+      ranked.add(muestra);
+    }
+    ranked.sort((a, b) => score[a]!.compareTo(score[b]!));
+    if (ranked.length <= 12) return ranked;
+    return ranked.sublist(0, 12);
   }
 
   (_Muestra, _Muestra)? _puente(_Muestra subida, _Muestra bajada) {
