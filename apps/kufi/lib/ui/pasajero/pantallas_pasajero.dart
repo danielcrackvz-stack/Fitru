@@ -138,6 +138,40 @@ class PantallaInicio extends StatelessWidget {
               ),
             ),
           Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => context.go('/pasajero/mapa'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: ColoresKufi.superficie2),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.near_me, color: ColoresKufi.verde),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('¿A dónde vas?', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                            Text('Abrí el mapa y marcá el destino', style: TextStyle(color: ColoresKufi.textoSuave)),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
@@ -159,6 +193,11 @@ class PantallaInicio extends StatelessWidget {
               ],
             ),
           ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text('Pagar pasaje', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+          ),
+          const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -178,6 +217,15 @@ class PantallaInicio extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: BotonKufi(
+              texto: 'Pagar con QR',
+              contorno: true,
+              onPressed: () => context.push('/pago/qr'),
             ),
           ),
           const SizedBox(height: 18),

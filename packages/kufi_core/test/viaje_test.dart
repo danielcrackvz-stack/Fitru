@@ -118,6 +118,18 @@ void main() {
     expect(cambio.indexWhere((i) => i.transbordos == 0), lessThan(cambio.indexWhere((i) => i.transbordos == 1)));
   });
 
+  test('del centro hacia el este hay opciones aunque la caminata pase de 800 m', () {
+    final plan = PlanificadorViajes(catalogoReal());
+    final ideas = plan.proponer(
+      origen: const Coord(-17.7833, -63.1821),
+      destino: const Coord(-17.8094, -63.1254),
+      tarifaCentavos: 230,
+      radioAndar: 2200,
+    );
+    expect(ideas.where((i) => i.tramos.any((t) => !t.aPie)), isNotEmpty);
+    expect(haversineMetros(const Coord(-17.7833, -63.1821), const Coord(-17.8094, -63.1254)) / 1000, greaterThan(5));
+  });
+
   test('proponer varios pares reales tarda menos de un segundo', () {
     final inicio = DateTime.now();
     final plan = PlanificadorViajes(catalogoReal());
