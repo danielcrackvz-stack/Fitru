@@ -1,0 +1,78 @@
+{
+  "$meta": {
+    "source": "Figma 'Cromi' (fileKey CB7eBpUHi5zWLHUYtN0ep8), public oEmbed thumbnail 755x1200 px",
+    "extraction_method": "Pixel sampling of a low-resolution thumbnail. The Figma MCP returned 'no edit access' (the account has a View seat on the Starter plan), so no variables, styles, or exact properties could be read.",
+    "confidence": "Colors ~±6 per channel (antialiasing/compression). Typography, sizes, radii, and spacing are VISUAL ESTIMATES, not Figma values. Replace them with get_variable_defs/get_design_context once you have access.",
+    "generated": "2026-11-21"
+  },
+  "color": {
+    "brand": {
+      "green-500": {"value": "#009048", "note": "primary green: splash, first list button, success check (sampled #00904A / #009A4F)"},
+      "green-600": {"value": "#006636", "note": "second button tone (sampled #016936)"},
+      "green-700": {"value": "#004E2A", "note": "third button tone (sampled #01512A)"},
+      "green-800": {"value": "#06421E", "note": "fourth button tone / darkest"},
+      "green-900": {"value": "#00240C", "note": "darkest shadows and accents"}
+    },
+    "gradient": {
+      "header-green": {"value": "linear-gradient(180deg, #009A4F 0%, #01582C 100%)", "note": "splash header and registration footer (estimated)"}
+    },
+    "neutral": {
+      "background": {"value": "#FCFCFC"},
+      "surface-100": {"value": "#F6F6F6"},
+      "surface-200": {"value": "#EAEAEA", "note": "cards / success modal"},
+      "surface-300": {"value": "#DEDEDE", "note": "bottom nav bar, PIN boxes (~#D9D9D9)"},
+      "border": {"value": "#CCCCCC"},
+      "text-primary": {"value": "#000000", "note": "estimated (black titles)"},
+      "text-on-primary": {"value": "#FFFFFF"},
+      "illustration-palm": {"value": "#787E78", "note": "gray palm illustrations (~#676E66)"}
+    },
+    "semantic": {
+      "success": {"value": "#009048", "note": "check and '¡Pago exitoso!' text"},
+      "danger-soft": {"value": "#E7C8C8", "note": "'Deshacer' button (pale pink)"},
+      "overlay-scrim": {"value": "rgba(0,0,0,0.4)", "note": "estimated: background darkened behind the bottom sheet / date picker"}
+    },
+    "card": {
+      "card-silver": {"value": "linear-gradient(135deg,#F0F0F0,#C0C0C0)", "note": "metallic card on '¡Bienvenido!' (estimated)"},
+      "visa-blue": {"value": "#1A1F71", "note": "VISA logo, visual only; not sampled with precision"}
+    }
+  },
+  "typography": {
+    "$note": "Family not verifiable from the thumbnail. It looks like a geometric/grotesque sans (Roboto/Inter type). The 'CROMI' logo is bold italic.",
+    "display-amount": {"size_est": "28-32", "weight": "bold", "example": "Bs 2.30 / Bs. 50.00"},
+    "title": {"size_est": "22-24", "weight": "bold", "example": "Pago manual, Transacciones, Crear cuenta"},
+    "greeting": {"size_est": "24", "weight": "regular", "example": "Hola, Usuario"},
+    "body": {"size_est": "14-16", "weight": "medium"},
+    "button": {"size_est": "12-14", "weight": "medium", "color": "#FFFFFF"},
+    "caption": {"size_est": "10-12", "example": "dates on transactions, nav labels"}
+  },
+  "radius": {
+    "$note": "Estimated on a 390x844 frame scale (iPhone 14/15 type), unconfirmed",
+    "button": "10-12",
+    "list-item": "14-16",
+    "card": "16",
+    "bottom-sheet": "24 (top corners)",
+    "success-modal": "24",
+    "nav-bar": "16-20",
+    "frame-device": "~40"
+  },
+  "spacing": {
+    "$note": "Estimated",
+    "screen-padding-x": 16,
+    "list-gap": 16,
+    "button-height": 48,
+    "bottom-nav-height": 56
+  },
+  "elevation": {
+    "button-shadow": "drop shadow 0 4 4 rgba(0,0,0,0.25) (visual estimate)",
+    "card-shadow": "soft drop shadow"
+  },
+  "iconography": {
+    "style": "line/outline icons, monochrome",
+    "observed": ["back arrow in a gray rounded square", "person (Perfil)", "bus/ticket in the center of the nav (label not legible)", "wallet/money in hand (Recarga)", "hand with coin (Recarga action)", "hand/person with ticket (Pago manual)", "calendar (date filter)", "check in a circle (success)", "contactless/chip icons on the card", "white bus (logo)", "sloth/mascot in the top corner (Cromi brand)", "palm trees (decoration)"]
+  },
+  "components_observed": [
+    "BottomNav (3 tabs)", "BalanceCard (2 variants: VISA+flag / silver 'SANTA CRUZ')", "PrimaryButton (4 green tones, used as a gradient by order)", "ActionTile (icon + label: Recarga, Pago manual)",
+    "ToggleRow (green row + switch)", "TransactionItem (Línea N, date, amount)", "BottomSheet (payment method / QR)", "DatePicker (Material 3, in English)",
+    "PinInput (4 boxes)", "TextField (underline and outlined: mixed)", "UploadTile (ID front/back photo)", "SuccessModal", "BackButton"
+  ]
+}
