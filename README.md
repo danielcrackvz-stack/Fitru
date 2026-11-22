@@ -41,11 +41,18 @@ El archivo queda en `apps/kufi/build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## APK para el equipo
 
-Cada push a `main` (y cada pull request) arma el APK de depuración y lo publica como artifact **kufi-apk-debug**.
+El APK de depuración pesa más de 150 MB. Para el celular usa el release partido por ABI (firma de depuración, R8 activo). En un teléfono actual baja el **arm64**.
 
-- Corridas: https://github.com/danielcrackvz-stack/Fitru/actions/workflows/ci.yml
-- APK de esta versión (artifact `kufi-apk-debug`, corrida verde): https://github.com/danielcrackvz-stack/Fitru/actions/runs/45063395644/artifacts/14769873115
-- Si esa corrida ya no está, entra a la verde más reciente de `main` y baja el mismo artifact.
+Cada push a `main` publica dos artifacts:
+
+- `kufi-apk-debug`: un solo APK de depuración, pesado.
+- `subi-apk-release`: `app-arm64-v8a-release.apk`, `app-armeabi-v7a-release.apk` y `app-x86_64-release.apk`.
+
+La demo v0.1.0 está en el prerelease, con los dos APK de teléfono ya renombrados:
+
+https://github.com/danielcrackvz-stack/Fitru/releases/tag/v0.1.0-demo
+
+Corridas: https://github.com/danielcrackvz-stack/Fitru/actions/workflows/ci.yml
 
 ## Cuentas de demostración
 
