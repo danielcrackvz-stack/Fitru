@@ -92,7 +92,7 @@ class _PantallaBienvenidaState extends State<PantallaBienvenida> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Kufi',
+                            'Subí',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 22,
@@ -255,7 +255,7 @@ class _PantallaPermisosState extends State<PantallaPermisos> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Kufi los usa solo para cobrar tu pasaje y mostrarte las rutas. La ubicación y el Bluetooth son opcionales (Ley 164 y protección de datos). Puedes cambiarlos en Ajustes.',
+                'Subí los usa solo para cobrar tu pasaje y mostrarte las rutas. La ubicación y el Bluetooth son opcionales (Ley 164 y protección de datos). Puedes cambiarlos en Ajustes.',
                 style: TextStyle(color: ColoresKufi.textoSuave),
               ),
               const SizedBox(height: 18),
@@ -432,13 +432,22 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'KUFI',
+                      'SUBÍ',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 40,
                         fontWeight: FontWeight.w800,
                         fontStyle: FontStyle.italic,
                         letterSpacing: 1.5,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Subí y pagá con un toque',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -815,7 +824,7 @@ class PantallaVerificacion extends StatelessWidget {
                     listo: true,
                   ),
                   _Check(
-                    texto: 'Revisión del equipo Kufi',
+                    texto: 'Revisión del equipo Subí',
                     listo: false,
                     enCurso: true,
                   ),
@@ -856,7 +865,7 @@ class PantallaVerificacion extends StatelessWidget {
                 showDialog<void>(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Soporte Kufi'),
+                    title: const Text('Soporte Subí'),
                     content: const Text(
                       'Escríbenos a hola@kufi.bo. En esta demo el mensaje no se envía.',
                     ),

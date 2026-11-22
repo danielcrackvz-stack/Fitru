@@ -548,7 +548,7 @@ class IconoEnCirculo extends StatelessWidget {
 
 String textoComprobante(UltimoCobroVista vista) {
   return [
-    'Kufi · comprobante',
+    'Subí · comprobante',
     vista.titulo,
     Dinero(vista.monto).texto,
     if (vista.fecha != null) fechaConHora(vista.fecha!),

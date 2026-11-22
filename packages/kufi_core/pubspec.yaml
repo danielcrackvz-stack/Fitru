@@ -1,5 +1,5 @@
 name: kufi_core
-description: Modelos, catálogo de trufis, libro mayor y protocolo de pago de Kufi.
+description: Modelos, catálogo de trufis, libro mayor y protocolo de pago de Subí. El paquete Dart sigue llamándose kufi_core.
 publish_to: none
 version: 0.1.0
 

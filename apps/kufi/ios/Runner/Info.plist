@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Kufi</string>
+	<string>Subí</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -60,15 +60,15 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Kufi usa tu ubicación para mostrar los trufis que pasan cerca.</string>
+	<string>Subí usa tu ubicación para mostrar los trufis que pasan cerca.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Kufi usa Bluetooth para detectar el trufi en el que vas y para que el chofer anuncie su ruta.</string>
+	<string>Subí usa Bluetooth para detectar el trufi en el que vas y para que el chofer anuncie su ruta.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>Kufi usa Bluetooth para el cobro del pasaje cerca del vehículo.</string>
+	<string>Subí usa Bluetooth para el cobro del pasaje cerca del vehículo.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Kufi usa la cámara para el QR del pasaje y las fotos del carnet.</string>
+	<string>Subí usa la cámara para el QR del pasaje y las fotos del carnet.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Kufi puede guardar el comprobante en tus fotos.</string>
+	<string>Subí puede guardar el comprobante en tus fotos.</string>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

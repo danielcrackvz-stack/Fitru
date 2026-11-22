@@ -23,7 +23,7 @@ class ConfigTeselas {
     return ConfigTeselas(
       urlPlantilla: url,
       atribucion: atribucion,
-      agente: 'dev.kufi.kufi',
+      agente: 'bo.subi.app',
       esOsmPublico: url.contains('openstreetmap.org'),
     );
   }

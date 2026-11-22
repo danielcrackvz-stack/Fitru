@@ -58,7 +58,7 @@ class _KufiAppState extends State<KufiApp> {
     return KufiScope(
       estado: widget.estado,
       child: MaterialApp.router(
-        title: 'Kufi',
+        title: 'Subí',
         debugShowCheckedModeBanner: false,
         locale: const Locale('es'),
         supportedLocales: const [Locale('es')],

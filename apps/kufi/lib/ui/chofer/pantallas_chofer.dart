@@ -256,7 +256,7 @@ class PantallaCobro extends StatelessWidget {
                     children: [
                       const Expanded(
                         child: Text(
-                          'Kufi Chofer',
+                          'Subí Chofer',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ),
@@ -483,7 +483,7 @@ class PantallaCierre extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Kufi Chofer',
+                    'Subí Chofer',
                     style: TextStyle(color: Colors.white70),
                   ),
                   const Text(

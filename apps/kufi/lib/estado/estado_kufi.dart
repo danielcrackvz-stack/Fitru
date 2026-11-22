@@ -707,7 +707,7 @@ class EstadoKufi extends ChangeNotifier {
       clave: 'manual-${DateTime.now().microsecondsSinceEpoch}',
       rutaId: ruta?.routeId ?? 'manual',
       nombreRuta: ruta?.nombreComun ?? 'Pago manual',
-      operador: ruta?.operador ?? 'Kufi',
+      operador: ruta?.operador ?? 'Subí',
       sentido: 'ida',
       medio: 'manual',
       cuentaChoferId: idChoferDemo,

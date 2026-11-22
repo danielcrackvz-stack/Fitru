@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import '../widgets.dart';
 
 const avisoBorrador =
-    'BORRADOR para revisión de un abogado. No es asesoría legal. Kufi todavía no está autorizado por la ASFI ni mueve dinero real: la recarga y los pasajes de esta versión son una simulación.';
+    'BORRADOR para revisión de un abogado. No es asesoría legal. Subí todavía no está autorizado por la ASFI ni mueve dinero real: la recarga y los pasajes de esta versión son una simulación.';
 
 const textoTerminos =
     '''
 $avisoBorrador
 
-1. Kufi es una billetera de demostración para pagar trufis y minibuses en Santa Cruz de la Sierra. Los montos que ves no salen de un banco ni de una entidad de intermediación financiera.
+1. Subí es una billetera de demostración para pagar trufis y minibuses en Santa Cruz de la Sierra. Los montos que ves no salen de un banco ni de una entidad de intermediación financiera.
 
-2. Si en el futuro Kufi custodiara dinero de otras personas, tendría que cumplir la Ley 393 de servicios financieros y obtener autorización de la ASFI antes de operar. Hasta ese día, no debe usarse como medio de pago real.
+2. Si en el futuro Subí custodiara dinero de otras personas, tendría que cumplir la Ley 393 de servicios financieros y obtener autorización de la ASFI antes de operar. Hasta ese día, no debe usarse como medio de pago real.
 
 3. El pasaje se confirma en tu teléfono. Un cobro repetido con la misma clave no se descuenta dos veces. Las tarifas mostradas (adulto, estudiante, niño y adulto mayor) están por confirmar con cada asociación.
 
@@ -24,7 +24,7 @@ const textoPrivacidad =
     '''
 $avisoBorrador
 
-Responsable: el equipo estudiantil de Kufi, en Santa Cruz de la Sierra.
+Responsable: el equipo estudiantil de Subí, en Santa Cruz de la Sierra.
 
 Datos que pedimos: nombre, correo, celular, carnet de identidad, fotos del carnet, PIN (solo como hash con sal en el almacenamiento seguro del teléfono) y, si aceptas, ubicación, Bluetooth y NFC.
 
@@ -34,7 +34,7 @@ Base: tu consentimiento al registrarte y al activar cada permiso. Puedes negarte
 
 Conservación: en esta demo los datos viven en el teléfono. Al borrar la cuenta se eliminan de este aparato.
 
-Derechos: puedes pedir el acceso, la corrección o la eliminación desde el perfil o escribiendo a hola@kufi.bo. Este correo es de contacto de la demo; el mensaje no se envía solo.
+Derechos: puedes pedir el acceso, la corrección o la eliminación desde el perfil o escribiendo a hola@subi.app. Este correo es de contacto de la demo; el mensaje no se envía solo.
 
 La protección de datos personales en Bolivia se interpreta junto con la Constitución y la Ley 164. Un abogado debe cerrar este texto antes de publicar la app.
 ''';

@@ -1,4 +1,6 @@
-# Plan Kufi
+# Plan Subí
+
+El nombre visible es Subí. Este plan conserva los nombres internos (`EstadoKufi`, `kufi_core`). Ver [NOMBRE.md](NOMBRE.md).
 
 Billetera para pagar trufis y minibuses en Santa Cruz de la Sierra. Equipo de cuatro personas. Este documento fija la arquitectura del MVP, el modelo de datos y el reparto de trabajo.
 

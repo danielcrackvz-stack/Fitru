@@ -1,4 +1,6 @@
-# Auditoría de Kufi
+# Auditoría de Subí
+
+El producto se llama Subí. Los nombres internos (`KufiHostApduService`, `KUFI_TOKEN_SECRET`) no cambiaron. Ver [NOMBRE.md](NOMBRE.md).
 
 Fecha: 2026-11-22. Revisión del MVP en la rama `cursor/kufi-mvp-eb00`, después de correr la app en Chrome con Flutter 3.47 / Dart 3.13. El código se dejó compatible con `sdk: ">=3.8.0 <4.0.0"` para que ese Dart y el stable más nuevo resuelvan las dependencias.
 

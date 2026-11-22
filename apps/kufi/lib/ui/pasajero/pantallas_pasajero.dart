@@ -37,7 +37,7 @@ class PantallaInicio extends StatelessWidget {
                   Row(
                     children: [
                       const Text(
-                        'Kufi',
+                        'Subí',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
@@ -90,7 +90,7 @@ class PantallaInicio extends StatelessWidget {
                             ),
                             Spacer(),
                             Text(
-                              'KUFI',
+                              'SUBÍ',
                               style: TextStyle(
                                 color: ColoresKufi.verde700,
                                 fontWeight: FontWeight.w800,
@@ -430,7 +430,7 @@ class PantallaRecarga extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Billetera Kufi · Santa Cruz',
+                  'Billetera Subí · Santa Cruz',
                   style: TextStyle(color: Colors.white70),
                 ),
               ],
