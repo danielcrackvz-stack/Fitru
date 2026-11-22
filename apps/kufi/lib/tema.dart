@@ -37,9 +37,21 @@ ThemeData temaKufi() {
     scaffoldBackgroundColor: ColoresKufi.fondo,
     splashFactory: InkRipple.splashFactory,
     textTheme: const TextTheme(
-      headlineMedium: TextStyle(fontWeight: FontWeight.w700, fontSize: 28, color: Colors.black),
-      titleLarge: TextStyle(fontWeight: FontWeight.w700, fontSize: 22, color: Colors.black),
-      titleMedium: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.black),
+      headlineMedium: TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 28,
+        color: Colors.black,
+      ),
+      titleLarge: TextStyle(
+        fontWeight: FontWeight.w700,
+        fontSize: 22,
+        color: Colors.black,
+      ),
+      titleMedium: TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 16,
+        color: Colors.black,
+      ),
       bodyMedium: TextStyle(fontSize: 15, height: 1.35, color: Colors.black),
       bodySmall: TextStyle(fontSize: 13, color: ColoresKufi.textoSuave),
     ),

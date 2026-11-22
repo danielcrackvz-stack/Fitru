@@ -6,6 +6,8 @@ import '../../alcance.dart';
 import '../../estado/modelos_app.dart';
 import '../../formato.dart';
 import '../../tema.dart';
+import '../formatos_entrada.dart';
+import '../legal/pantalla_legal.dart';
 import '../widgets.dart';
 
 class PantallaInicio extends StatelessWidget {
@@ -34,38 +36,86 @@ class PantallaInicio extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const Text('Kufi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 22)),
+                      const Text(
+                        'Kufi',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 22,
+                        ),
+                      ),
                       const Spacer(),
                       IconButton(
                         onPressed: () => context.push('/pasajero/historial'),
-                        icon: const Icon(Icons.receipt_long, color: Colors.white),
+                        icon: const Icon(
+                          Icons.receipt_long,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
-                  Text('¡Bienvenido, $nombre!', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)),
+                  Text(
+                    '¡Bienvenido, $nombre!',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
-                      gradient: const LinearGradient(colors: [Color(0xFFF4F4F4), Color(0xFFC8C8C8)]),
-                      boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 12, offset: Offset(0, 6))],
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF4F4F4), Color(0xFFC8C8C8)],
+                      ),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 12,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Row(
                           children: [
-                            Icon(Icons.contactless, color: ColoresKufi.verde700),
+                            Icon(
+                              Icons.contactless,
+                              color: ColoresKufi.verde700,
+                            ),
                             Spacer(),
-                            Text('KUFI', style: TextStyle(color: ColoresKufi.verde700, fontWeight: FontWeight.w800, fontStyle: FontStyle.italic)),
+                            Text(
+                              'KUFI',
+                              style: TextStyle(
+                                color: ColoresKufi.verde700,
+                                fontWeight: FontWeight.w800,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 18),
-                        Text(Dinero(saldo).texto, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
+                        Text(
+                          Dinero(saldo).texto,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                         const SizedBox(height: 6),
-                        const Text('SANTA CRUZ', style: TextStyle(letterSpacing: 1.4, fontWeight: FontWeight.w700, color: ColoresKufi.verde800)),
+                        const Text(
+                          'SANTA CRUZ',
+                          style: TextStyle(
+                            letterSpacing: 1.4,
+                            fontWeight: FontWeight.w700,
+                            color: ColoresKufi.verde800,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -113,9 +163,20 @@ class PantallaInicio extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Expanded(child: BotonKufi(texto: 'Pagar con NFC', onPressed: () => context.push('/pago/nfc'))),
+                Expanded(
+                  child: BotonKufi(
+                    texto: 'Pagar con NFC',
+                    onPressed: () => context.push('/pago/nfc'),
+                  ),
+                ),
                 const SizedBox(width: 10),
-                Expanded(child: BotonKufi(texto: 'Bluetooth', contorno: true, onPressed: () => context.push('/pago/ble'))),
+                Expanded(
+                  child: BotonKufi(
+                    texto: 'Bluetooth',
+                    contorno: true,
+                    onPressed: () => context.push('/pago/ble'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -124,15 +185,30 @@ class PantallaInicio extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                const Text('Últimos viajes', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                const Text(
+                  'Últimos viajes',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+                ),
                 const Spacer(),
-                TextButton(onPressed: () => context.push('/pasajero/historial'), child: const Text('Ver más')),
+                TextButton(
+                  onPressed: () => context.push('/pasajero/historial'),
+                  child: const Text('Ver más'),
+                ),
               ],
             ),
           ),
           if (usuario != null)
-            for (final movimiento in estado.movimientosDe(usuario.id).where((m) => m.tipo == TipoMovimiento.pasaje && m.centavos < 0).take(3))
-              _MovimientoTile(movimiento: movimiento, onTap: () => context.push('/recibo/${movimiento.pagoId}')),
+            for (final movimiento
+                in estado
+                    .movimientosDe(usuario.id)
+                    .where(
+                      (m) => m.tipo == TipoMovimiento.pasaje && m.centavos < 0,
+                    )
+                    .take(3))
+              _MovimientoTile(
+                movimiento: movimiento,
+                onTap: () => context.push('/recibo/${movimiento.pagoId}'),
+              ),
         ],
       ),
     );
@@ -140,7 +216,11 @@ class PantallaInicio extends StatelessWidget {
 }
 
 class _Accion extends StatelessWidget {
-  const _Accion({required this.icono, required this.texto, required this.onTap});
+  const _Accion({
+    required this.icono,
+    required this.texto,
+    required this.onTap,
+  });
 
   final IconData icono;
   final String texto;
@@ -200,14 +280,30 @@ class _MovimientoTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(movimiento.nombreRuta ?? 'Movimiento', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                      Text(fechaConHora(movimiento.creadoEn), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text(
+                        movimiento.nombreRuta ?? 'Movimiento',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        fechaConHora(movimiento.creadoEn),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
                 Text(
                   Dinero(movimiento.centavos.abs()).texto,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
                 ),
               ],
             ),
@@ -232,13 +328,17 @@ class _PantallaHistorialState extends State<PantallaHistorial> {
   Widget build(BuildContext context) {
     final estado = KufiScope.of(context);
     final usuario = estado.sesion;
-    final todos = usuario == null ? <Movimiento>[] : estado.movimientosDe(usuario.id);
+    final todos = usuario == null
+        ? <Movimiento>[]
+        : estado.movimientosDe(usuario.id);
     final lista = todos.where((m) {
       if (m.tipo == TipoMovimiento.reverso) return true;
       if (m.centavos > 0 && m.tipo == TipoMovimiento.pasaje) return false;
       if (_dia == null) return true;
       final local = m.creadoEn.toLocal();
-      return local.year == _dia!.year && local.month == _dia!.month && local.day == _dia!.day;
+      return local.year == _dia!.year &&
+          local.month == _dia!.month &&
+          local.day == _dia!.day;
     }).toList();
     return Scaffold(
       appBar: AppBar(
@@ -274,7 +374,9 @@ class _PantallaHistorialState extends State<PantallaHistorial> {
           if (lista.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: 40),
-              child: Center(child: Text('Todavía no hay movimientos en esa fecha.')),
+              child: Center(
+                child: Text('Todavía no hay movimientos en esa fecha.'),
+              ),
             ),
           for (final movimiento in lista)
             _MovimientoTile(
@@ -300,29 +402,50 @@ class PantallaRecarga extends StatelessWidget {
         children: [
           SafeArea(
             bottom: false,
-            child: Text('Hola, ${estado.sesion?.nombre.split(' ').first ?? 'pasajero'}', style: Theme.of(context).textTheme.headlineMedium),
+            child: Text(
+              'Hola, ${estado.sesion?.nombre.split(' ').first ?? 'pasajero'}',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
           ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(colors: [Color(0xFF14315C), Color(0xFF1A1F71)]),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF14315C), Color(0xFF1A1F71)],
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Saldo', style: TextStyle(color: Colors.white70)),
-                Text(Dinero(saldo).texto, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800)),
+                Text(
+                  Dinero(saldo).texto,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                const Text('Billetera Kufi · Santa Cruz', style: TextStyle(color: Colors.white70)),
+                const Text(
+                  'Billetera Kufi · Santa Cruz',
+                  style: TextStyle(color: Colors.white70),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          const Text('Recargar', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+          const Text(
+            'Recargar',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+          ),
           const SizedBox(height: 8),
-          const Text('Elige un monto. El cobro del medio de pago está simulado.', style: TextStyle(color: ColoresKufi.textoSuave)),
+          const Text(
+            avisoBorrador,
+            style: TextStyle(color: ColoresKufi.textoSuave),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -335,6 +458,10 @@ class PantallaRecarga extends StatelessWidget {
                 ),
             ],
           ),
+          const SizedBox(height: 16),
+          _RecargaLibre(
+            alElegir: (centavos) => _abrirMetodos(context, centavos),
+          ),
         ],
       ),
     );
@@ -344,22 +471,39 @@ class PantallaRecarga extends StatelessWidget {
     final medio = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: ColoresKufi.fondo,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Recargar ${Dinero(monto).texto}', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Recargar ${Dinero(monto).texto}',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 6),
-            const Text('Selecciona el método. Nada sale de tu banco: es una simulación.'),
+            const Text(
+              'Selecciona el método. Nada sale de tu banco: es una simulación.',
+            ),
             const SizedBox(height: 12),
-            BotonKufi(texto: 'Tarjeta', onPressed: () => Navigator.pop(context, 'tarjeta')),
+            BotonKufi(
+              texto: 'Tarjeta',
+              onPressed: () => Navigator.pop(context, 'tarjeta'),
+            ),
             const SizedBox(height: 8),
-            BotonKufi(texto: 'Tigo Money', onPressed: () => Navigator.pop(context, 'tigo')),
+            BotonKufi(
+              texto: 'Tigo Money',
+              onPressed: () => Navigator.pop(context, 'tigo'),
+            ),
             const SizedBox(height: 8),
-            BotonKufi(texto: 'QR de recarga', contorno: true, onPressed: () => Navigator.pop(context, 'qr')),
+            BotonKufi(
+              texto: 'QR de recarga',
+              contorno: true,
+              onPressed: () => Navigator.pop(context, 'qr'),
+            ),
           ],
         ),
       ),
@@ -368,7 +512,9 @@ class PantallaRecarga extends StatelessWidget {
     final mensaje = KufiScope.of(context).recargar(monto, medio);
     if (!context.mounted) return;
     if (mensaje != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mensaje)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(mensaje)));
       return;
     }
     context.push('/recibo/ultima');
@@ -394,15 +540,31 @@ class PantallaPerfil extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: ColoresKufi.menta,
-                child: Text(usuario.nombre.substring(0, 1), style: const TextStyle(fontSize: 24, color: ColoresKufi.verde, fontWeight: FontWeight.w800)),
+                child: Text(
+                  usuario.nombre.substring(0, 1),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    color: ColoresKufi.verde,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(usuario.nombre, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-                    Text(usuario.telefono, style: const TextStyle(color: ColoresKufi.textoSuave)),
+                    Text(
+                      usuario.nombre,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                    Text(
+                      usuario.telefono,
+                      style: const TextStyle(color: ColoresKufi.textoSuave),
+                    ),
                   ],
                 ),
               ),
@@ -451,7 +613,9 @@ class PantallaPerfil extends StatelessWidget {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(chofer ? 'Entrar como pasajero' : 'Entrar como chofer'),
-            subtitle: Text(chofer ? 'Juanito Perez Gonzales' : 'Carlos Mamani · PIN 1234'),
+            subtitle: Text(
+              chofer ? 'Juanito Perez Gonzales' : 'Carlos Mamani · PIN 1234',
+            ),
             trailing: const Icon(Icons.swap_horiz),
             onTap: () {
               estado.cambiarA(chofer ? Rol.pasajero : Rol.chofer);
@@ -465,6 +629,48 @@ class PantallaPerfil extends StatelessWidget {
               subtitle: const Text('Solo para la demo del equipo'),
               onTap: () => estado.marcarKycListo(true),
             ),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Términos'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/legal/terminos'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Política de privacidad'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/legal/privacidad'),
+          ),
+          BotonKufi(
+            texto: 'Borrar cuenta',
+            peligro: true,
+            onPressed: () async {
+              final confirma = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Borrar cuenta'),
+                  content: const Text(
+                    'Se eliminan de este teléfono tu nombre, carnet, PIN y movimientos. Esta demo no envía el pedido a un servidor.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancelar'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Borrar'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirma != true || !context.mounted) return;
+              await estado.borrarCuentaActual();
+              if (!context.mounted) return;
+              context.go('/ingresar');
+            },
+          ),
           const SizedBox(height: 8),
           BotonKufi(
             texto: 'Cerrar sesión',
@@ -482,7 +688,10 @@ class PantallaPerfil extends StatelessWidget {
   Future<void> _editarTarifas(BuildContext context) async {
     final estado = KufiScope.of(context);
     final controles = {
-      for (final tarifa in estado.tarifas.tarifas) tarifa.tipo: TextEditingController(text: (tarifa.centavos / 100).toStringAsFixed(2).replaceAll('.', ',')),
+      for (final tarifa in estado.tarifas.tarifas)
+        tarifa.tipo: TextEditingController(
+          text: (tarifa.centavos / 100).toStringAsFixed(2).replaceAll('.', ','),
+        ),
     };
     await showDialog<void>(
       context: context,
@@ -495,19 +704,29 @@ class PantallaPerfil extends StatelessWidget {
               TextField(
                 controller: entrada.value,
                 decoration: InputDecoration(labelText: entrada.key.etiqueta),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [formatoMonto, largoMaximo(8)],
               ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () {
               for (final entrada in controles.entries) {
-                final limpio = entrada.value.text.replaceAll('.', '').replaceAll(',', '.');
-                final bolivianos = double.tryParse(limpio);
-                if (bolivianos == null || bolivianos <= 0) continue;
-                estado.fijarTarifa(entrada.key, (bolivianos * 100).round());
+                final monto = validarMonto(
+                  entrada.value.text,
+                  minimoCentavos: 50,
+                  maximoCentavos: 5000,
+                  etiqueta: entrada.key.etiqueta,
+                );
+                if (!monto.esValido || monto.centavos == null) continue;
+                estado.fijarTarifa(entrada.key, monto.centavos!);
               }
               Navigator.pop(context);
             },
@@ -519,5 +738,63 @@ class PantallaPerfil extends StatelessWidget {
     for (final control in controles.values) {
       control.dispose();
     }
+  }
+}
+
+class _RecargaLibre extends StatefulWidget {
+  const _RecargaLibre({required this.alElegir});
+
+  final void Function(int centavos) alElegir;
+
+  @override
+  State<_RecargaLibre> createState() => _RecargaLibreState();
+}
+
+class _RecargaLibreState extends State<_RecargaLibre> {
+  final _monto = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _monto.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _monto,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [formatoMonto, largoMaximo(8)],
+          decoration: const InputDecoration(
+            labelText: 'Otro monto',
+            hintText: '20,00',
+          ),
+        ),
+        if (_error != null)
+          Text(_error!, style: const TextStyle(color: ColoresKufi.peligro)),
+        const SizedBox(height: 8),
+        BotonKufi(
+          texto: 'Recargar este monto',
+          contorno: true,
+          onPressed: () {
+            final monto = validarMonto(
+              _monto.text,
+              minimoCentavos: minimoRecargaCentavos,
+              maximoCentavos: maximoRecargaCentavos,
+              etiqueta: 'La recarga',
+            );
+            if (!monto.esValido || monto.centavos == null) {
+              setState(() => _error = monto.mensaje);
+              return;
+            }
+            widget.alElegir(monto.centavos!);
+          },
+        ),
+      ],
+    );
   }
 }

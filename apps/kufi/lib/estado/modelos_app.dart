@@ -1,15 +1,8 @@
-import 'dart:convert';
-
-import 'package:crypto/crypto.dart';
 import 'package:kufi_core/kufi_core.dart';
 
 enum Rol { pasajero, chofer }
 
 Rol rolDesde(String valor) => valor == 'chofer' ? Rol.chofer : Rol.pasajero;
-
-String hashPin(String pin, String usuarioId) {
-  return sha256.convert(utf8.encode('$usuarioId:$pin')).toString();
-}
 
 class Usuario {
   Usuario({
@@ -17,26 +10,32 @@ class Usuario {
     required this.nombre,
     required this.correo,
     required this.telefono,
-    required this.pinHash,
     required this.rol,
+    this.carnet = '',
+    this.aceptoTerminos = false,
     this.kycListo = false,
     this.huella = false,
     this.notificaciones = true,
     this.fotoAnverso = false,
     this.fotoReverso = false,
+    this.pinHashLegado = '',
   });
 
   final String id;
   String nombre;
   String correo;
   String telefono;
-  String pinHash;
+  String carnet;
+  bool aceptoTerminos;
   final Rol rol;
   bool kycListo;
   bool huella;
   bool notificaciones;
   bool fotoAnverso;
   bool fotoReverso;
+
+  /// Hash viejo leído de una instalación anterior. No se vuelve a guardar.
+  String pinHashLegado;
 
   String get telefonoEnmascarado {
     final digitos = telefono.replaceAll(RegExp(r'\D'), '');
@@ -47,18 +46,19 @@ class Usuario {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'nombre': nombre,
-        'correo': correo,
-        'telefono': telefono,
-        'pinHash': pinHash,
-        'rol': rol.name,
-        'kycListo': kycListo,
-        'huella': huella,
-        'notificaciones': notificaciones,
-        'fotoAnverso': fotoAnverso,
-        'fotoReverso': fotoReverso,
-      };
+    'id': id,
+    'nombre': nombre,
+    'correo': correo,
+    'telefono': telefono,
+    'carnet': carnet,
+    'aceptoTerminos': aceptoTerminos,
+    'rol': rol.name,
+    'kycListo': kycListo,
+    'huella': huella,
+    'notificaciones': notificaciones,
+    'fotoAnverso': fotoAnverso,
+    'fotoReverso': fotoReverso,
+  };
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
     return Usuario(
@@ -66,7 +66,9 @@ class Usuario {
       nombre: json['nombre'] as String,
       correo: json['correo'] as String? ?? '',
       telefono: json['telefono'] as String? ?? '',
-      pinHash: json['pinHash'] as String,
+      carnet: json['carnet'] as String? ?? '',
+      aceptoTerminos: json['aceptoTerminos'] as bool? ?? false,
+      pinHashLegado: json['pinHash'] as String? ?? '',
       rol: rolDesde(json['rol'] as String? ?? 'pasajero'),
       kycListo: json['kycListo'] as bool? ?? false,
       huella: json['huella'] as bool? ?? false,
@@ -83,6 +85,7 @@ class Turno {
     required this.rutaId,
     required this.sentido,
     required this.vehiculoId,
+    required this.placa,
     required this.inicio,
     this.pausado = false,
     this.ejemplo = false,
@@ -92,19 +95,21 @@ class Turno {
   final String rutaId;
   final String sentido;
   final String vehiculoId;
+  final String placa;
   final DateTime inicio;
   bool pausado;
   final bool ejemplo;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'rutaId': rutaId,
-        'sentido': sentido,
-        'vehiculoId': vehiculoId,
-        'inicio': inicio.toUtc().toIso8601String(),
-        'pausado': pausado,
-        'ejemplo': ejemplo,
-      };
+    'id': id,
+    'rutaId': rutaId,
+    'sentido': sentido,
+    'vehiculoId': vehiculoId,
+    'placa': placa,
+    'inicio': inicio.toUtc().toIso8601String(),
+    'pausado': pausado,
+    'ejemplo': ejemplo,
+  };
 
   factory Turno.fromJson(Map<String, dynamic> json) {
     return Turno(
@@ -112,6 +117,7 @@ class Turno {
       rutaId: json['rutaId'] as String,
       sentido: json['sentido'] as String? ?? 'ida',
       vehiculoId: json['vehiculoId'] as String? ?? 'SCZ-107',
+      placa: json['placa'] as String? ?? '',
       inicio: DateTime.parse(json['inicio'] as String),
       pausado: json['pausado'] as bool? ?? false,
       ejemplo: json['ejemplo'] as bool? ?? false,
@@ -137,13 +143,13 @@ class Aviso {
   bool leido;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'tipo': tipo,
-        'titulo': titulo,
-        'cuerpo': cuerpo,
-        'fecha': fecha.toUtc().toIso8601String(),
-        'leido': leido,
-      };
+    'id': id,
+    'tipo': tipo,
+    'titulo': titulo,
+    'cuerpo': cuerpo,
+    'fecha': fecha.toUtc().toIso8601String(),
+    'leido': leido,
+  };
 
   factory Aviso.fromJson(Map<String, dynamic> json) {
     return Aviso(

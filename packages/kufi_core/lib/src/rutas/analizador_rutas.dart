@@ -18,13 +18,16 @@ class AnalizadorRutas {
       final props = (feature['properties'] as Map).cast<String, dynamic>();
       final geometria = (feature['geometry'] as Map).cast<String, dynamic>();
       if (geometria['type'] != 'LineString') continue;
-      final coordenadas = (geometria['coordinates'] as List<dynamic>).map((par) {
+      final coordenadas =
+          (geometria['coordinates'] as List<dynamic>).map((par) {
         final lista = par as List<dynamic>;
-        return Coord((lista[1] as num).toDouble(), (lista[0] as num).toDouble());
+        return Coord(
+            (lista[1] as num).toDouble(), (lista[0] as num).toDouble());
       }).toList();
       final rutaId = props['route_id'] as String;
       final tramo = TramoRuta(
-        shapeId: (props['shape_id'] as String?) ?? '${rutaId}_${props['sentido']}',
+        shapeId:
+            (props['shape_id'] as String?) ?? '${rutaId}_${props['sentido']}',
         rutaId: rutaId,
         sentido: (props['sentido'] as String?) ?? 'ida',
         puntos: coordenadas,
@@ -38,7 +41,8 @@ class AnalizadorRutas {
       propsPorRuta[rutaId] = props;
     }
 
-    final extra = csv == null ? const <String, Map<String, String>>{} : _leerCsv(csv);
+    final extra =
+        csv == null ? const <String, Map<String, String>>{} : _leerCsv(csv);
     final rutas = <RutaTrufi>[];
     for (final entrada in tramosPorRuta.entries) {
       final props = propsPorRuta[entrada.key] ?? const {};
@@ -55,19 +59,25 @@ class AnalizadorRutas {
       rutas.add(
         RutaTrufi(
           routeId: entrada.key,
-          nombreComun: _texto(fila?['nombre_comun'], props['nombre_comun']) ?? entrada.key,
-          nombreCrudo: _texto(fila?['nombre_crudo'], props['nombre_crudo']) ?? '',
-          nombreRevisar: _booleano(fila?['nombre_revisar'], props['nombre_revisar']),
+          nombreComun: _texto(fila?['nombre_comun'], props['nombre_comun']) ??
+              entrada.key,
+          nombreCrudo:
+              _texto(fila?['nombre_crudo'], props['nombre_crudo']) ?? '',
+          nombreRevisar:
+              _booleano(fila?['nombre_revisar'], props['nombre_revisar']),
           motivoRevisar: fila?['motivo_revisar'] ?? '',
           zonas: _texto(fila?['zonas'], props['zonas']) ?? '',
           operador: _texto(fila?['operador'], props['operador']) ?? '',
           tipoEntidad: fila?['tipo_entidad'] ?? '',
           federacion: _texto(fila?['federacion'], props['federacion']) ?? '',
-          jurisdiccion: _texto(fila?['jurisdiccion'], props['jurisdiccion']) ?? '',
-          colorPanter: _texto(fila?['color_panter'], props['color_panter']) ?? '',
+          jurisdiccion:
+              _texto(fila?['jurisdiccion'], props['jurisdiccion']) ?? '',
+          colorPanter:
+              _texto(fila?['color_panter'], props['color_panter']) ?? '',
           banderin: _texto(fila?['banderin'], props['banderin']) ?? '',
           colorHex: _color(_texto(fila?['color_hex'], props['color_hex'])),
-          colorHex2: _colorOpcional(_texto(fila?['color_hex_2'], props['color_hex_2'])),
+          colorHex2: _colorOpcional(
+              _texto(fila?['color_hex_2'], props['color_hex_2'])),
           ida: ida,
           vuelta: vuelta,
         ),
@@ -131,7 +141,8 @@ class CatalogoRutas {
 
   final List<RutaTrufi> rutas;
 
-  int get totalTrazos => rutas.fold(0, (suma, ruta) => suma + ruta.tramos.length);
+  int get totalTrazos =>
+      rutas.fold(0, (suma, ruta) => suma + ruta.tramos.length);
 
   int get urbanas => rutas.where((r) => r.esUrbana).length;
 
@@ -161,7 +172,8 @@ class CatalogoRutas {
     }).toList();
     final consultaPlegada = plegar(consulta).trim();
     filtradas.sort((a, b) {
-      final porNombre = _puntaje(a, consultaPlegada).compareTo(_puntaje(b, consultaPlegada));
+      final porNombre =
+          _puntaje(a, consultaPlegada).compareTo(_puntaje(b, consultaPlegada));
       if (porNombre != 0) return porNombre;
       return plegar(a.nombreComun).compareTo(plegar(b.nombreComun));
     });
@@ -196,13 +208,17 @@ class CatalogoRutas {
   }
 
   /// La ruta cuyo trazado pasa más cerca del toque, si está a menos de [maximoMetros].
-  RutaCercana? masCercanaAlToque(Coord punto, {double maximoMetros = 180, String? jurisdiccion}) {
-    final lista = cercaDe(punto, jurisdiccion: jurisdiccion, limite: 1, maximoMetros: maximoMetros);
+  RutaCercana? masCercanaAlToque(Coord punto,
+      {double maximoMetros = 180, String? jurisdiccion}) {
+    final lista = cercaDe(punto,
+        jurisdiccion: jurisdiccion, limite: 1, maximoMetros: maximoMetros);
     return lista.isEmpty ? null : lista.first;
   }
 
   static bool _pasaJurisdiccion(RutaTrufi ruta, String? jurisdiccion) {
-    if (jurisdiccion == null || jurisdiccion.isEmpty || jurisdiccion == 'todas') {
+    if (jurisdiccion == null ||
+        jurisdiccion.isEmpty ||
+        jurisdiccion == 'todas') {
       return true;
     }
     return plegar(ruta.jurisdiccion) == plegar(jurisdiccion);

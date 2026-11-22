@@ -585,6 +585,7 @@ class UltimoCobroVista {
 Future<void> copiarTexto(BuildContext context, String texto) async {
   await Clipboard.setData(ClipboardData(text: texto));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context)
-      .showSnackBar(const SnackBar(content: Text('Comprobante copiado.')));
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(const SnackBar(content: Text('Comprobante copiado.')));
 }

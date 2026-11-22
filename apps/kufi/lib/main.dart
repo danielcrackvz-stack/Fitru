@@ -6,6 +6,7 @@ import 'package:kufi_core/kufi_core.dart';
 
 import 'alcance.dart';
 import 'estado/almacen_preferencias.dart';
+import 'estado/almacen_secreto.dart';
 import 'estado/estado_kufi.dart';
 import 'router.dart';
 import 'tema.dart';
@@ -14,8 +15,12 @@ import 'ui/widgets.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
+  final secreto = AlmacenSecretoSeguro();
+  final firmador = await firmadorDeArranque(secreto);
   final estado = EstadoKufi(
     almacen: AlmacenPreferencias(),
+    secreto: secreto,
+    firmador: firmador,
     cargador: () async {
       final geo = await rootBundle.loadString('assets/datos/rutas.geojson');
       final csv = await rootBundle.loadString('assets/datos/rutas_nombres.csv');
@@ -24,7 +29,7 @@ Future<void> main() async {
   );
   await estado.iniciar();
   final captura = capturaDesdeUrl();
-  if (captura != null) estado.prepararCaptura(captura);
+  if (captura != null) await estado.prepararCaptura(captura);
   runApp(KufiApp(estado: estado));
 }
 
@@ -66,10 +71,7 @@ class _KufiAppState extends State<KufiApp> {
         routerConfig: _router,
         builder: (context, child) {
           return Stack(
-            children: [
-              child ?? const SizedBox.shrink(),
-              const BannerKufi(),
-            ],
+            children: [child ?? const SizedBox.shrink(), const BannerKufi()],
           );
         },
       ),

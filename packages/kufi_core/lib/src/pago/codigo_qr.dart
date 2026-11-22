@@ -14,7 +14,9 @@ class CodigoQrPago {
   static const esquema = 'kufi://pago/v1/';
 
   static String emitir(TokenPago token) {
-    final cuerpo = base64Url.encode(utf8.encode(jsonEncode(token.toJson()))).replaceAll('=', '');
+    final cuerpo = base64Url
+        .encode(utf8.encode(jsonEncode(token.toJson())))
+        .replaceAll('=', '');
     return '$esquema$cuerpo';
   }
 

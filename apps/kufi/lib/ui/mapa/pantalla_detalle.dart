@@ -47,7 +47,9 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
     final estado = KufiScope.of(context);
     final ruta = estado.catalogo.porId(widget.routeId);
     if (ruta == null) {
-      return const Scaffold(body: Center(child: Text('No encontramos esa ruta.')));
+      return const Scaffold(
+        body: Center(child: Text('No encontramos esa ruta.')),
+      );
     }
     final tramo = ruta.tramo(_sentido) ?? ruta.principal;
     final otro = _sentido == 'ida' ? ruta.vuelta : ruta.ida;
@@ -62,7 +64,12 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
                 children: [
                   BotonAtras(onPressed: () => context.pop()),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(ruta.nombreComun, style: Theme.of(context).textTheme.titleLarge)),
+                  Expanded(
+                    child: Text(
+                      ruta.nombreComun,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -74,25 +81,39 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
               options: MapOptions(
                 initialCenter: tramo == null || tramo.puntos.isEmpty
                     ? const LatLng(-17.78, -63.18)
-                    : LatLng(tramo.puntos[tramo.puntos.length ~/ 2].lat, tramo.puntos[tramo.puntos.length ~/ 2].lon),
+                    : LatLng(
+                        tramo.puntos[tramo.puntos.length ~/ 2].lat,
+                        tramo.puntos[tramo.puntos.length ~/ 2].lon,
+                      ),
                 initialZoom: 12.5,
                 backgroundColor: const Color(0xFFE7E2D6),
               ),
               children: [
-                TileLayer(urlTemplate: _teselas.urlPlantilla, userAgentPackageName: _teselas.agente),
+                TileLayer(
+                  urlTemplate: _teselas.urlPlantilla,
+                  userAgentPackageName: _teselas.agente,
+                ),
                 PolylineLayer(
                   polylines: [
                     if (ruta.ida != null)
                       Polyline(
-                        points: [for (final p in ruta.ida!.puntos) LatLng(p.lat, p.lon)],
+                        points: [
+                          for (final p in ruta.ida!.puntos)
+                            LatLng(p.lat, p.lon),
+                        ],
                         strokeWidth: 5,
                         color: colorHex(ruta.colorHex),
                       ),
                     if (ruta.vuelta != null)
                       Polyline(
-                        points: [for (final p in ruta.vuelta!.puntos) LatLng(p.lat, p.lon)],
+                        points: [
+                          for (final p in ruta.vuelta!.puntos)
+                            LatLng(p.lat, p.lon),
+                        ],
                         strokeWidth: 4,
-                        color: colorHex(ruta.colorHex2.isEmpty ? '#F07C00' : ruta.colorHex2),
+                        color: colorHex(
+                          ruta.colorHex2.isEmpty ? '#F07C00' : ruta.colorHex2,
+                        ),
                         pattern: StrokePattern.dashed(segments: const [10, 8]),
                       ),
                   ],
@@ -105,8 +126,15 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
                         width: 34,
                         height: 34,
                         child: const DecoratedBox(
-                          decoration: BoxDecoration(color: ColoresKufi.verde, shape: BoxShape.circle),
-                          child: Icon(Icons.directions_bus, color: Colors.white, size: 18),
+                          decoration: BoxDecoration(
+                            color: ColoresKufi.verde,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.directions_bus,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -122,13 +150,24 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
                   children: [
                     _leyenda(colorHex(ruta.colorHex), 'Ida'),
                     const SizedBox(width: 12),
-                    _leyenda(colorHex(ruta.colorHex2.isEmpty ? '#F07C00' : ruta.colorHex2), 'Vuelta'),
+                    _leyenda(
+                      colorHex(
+                        ruta.colorHex2.isEmpty ? '#F07C00' : ruta.colorHex2,
+                      ),
+                      'Vuelta',
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _sentidoChip(ruta, 'ida', 'Ida · ${ruta.ida?.zonaOrigen ?? ''} → ${ruta.ida?.zonaDestino ?? ''}')),
+                    Expanded(
+                      child: _sentidoChip(
+                        ruta,
+                        'ida',
+                        'Ida · ${ruta.ida?.zonaOrigen ?? ''} → ${ruta.ida?.zonaDestino ?? ''}',
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(child: _sentidoChip(ruta, 'vuelta', 'Vuelta')),
                   ],
@@ -137,8 +176,14 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
                 Row(
                   children: [
                     _dato(tramo == null ? '—' : kmTexto(tramo.km), 'Distancia'),
-                    _dato(tramo == null ? '—' : minTexto(tramo.minutos), 'Tiempo aprox.'),
-                    _dato(Dinero(estado.tarifas.montoDe(TipoPasaje.adulto)).texto, 'Pasaje adulto'),
+                    _dato(
+                      tramo == null ? '—' : minTexto(tramo.minutos),
+                      'Tiempo aprox.',
+                    ),
+                    _dato(
+                      Dinero(estado.tarifas.montoDe(TipoPasaje.adulto)).texto,
+                      'Pasaje adulto',
+                    ),
                   ],
                 ),
                 const Divider(height: 28),
@@ -148,7 +193,10 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
                     etiqueta: _sentido == 'ida' ? 'Vuelta' : 'Ida',
                     valor: '${kmTexto(otro.km)} · ${minTexto(otro.minutos)}',
                   ),
-                FilaDato(etiqueta: 'Panter', valor: '${ruta.panterVisible} · ${ruta.federacion}'),
+                FilaDato(
+                  etiqueta: 'Panter',
+                  valor: '${ruta.panterVisible} · ${ruta.federacion}',
+                ),
                 if (ruta.nombreRevisar)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -161,7 +209,11 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
                 BotonKufi(
                   texto: 'Pagar en este trufi',
                   onPressed: () {
-                    estado.prepararPago(ruta: ruta, sentido: _sentido, medio: 'nfc');
+                    estado.prepararPago(
+                      ruta: ruta,
+                      sentido: _sentido,
+                      medio: 'nfc',
+                    );
                     context.push('/pago/nfc');
                   },
                 ),
@@ -174,7 +226,12 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
   }
 
   LatLng _bus(TramoRuta tramo) {
-    final punto = posicionSimulada(linea: tramo.puntos, ahora: DateTime.now(), fase: 0.2, vueltasPorHora: 1);
+    final punto = posicionSimulada(
+      linea: tramo.puntos,
+      ahora: DateTime.now(),
+      fase: 0.2,
+      vueltasPorHora: 1,
+    );
     return LatLng(punto.lat, punto.lon);
   }
 
@@ -198,9 +255,18 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
         decoration: BoxDecoration(
           color: activo ? ColoresKufi.menta : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: activo ? ColoresKufi.verde : ColoresKufi.superficie2),
+          border: Border.all(
+            color: activo ? ColoresKufi.verde : ColoresKufi.superficie2,
+          ),
         ),
-        child: Text(texto, maxLines: 2, style: TextStyle(fontWeight: activo ? FontWeight.w700 : FontWeight.w500, fontSize: 13)),
+        child: Text(
+          texto,
+          maxLines: 2,
+          style: TextStyle(
+            fontWeight: activo ? FontWeight.w700 : FontWeight.w500,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }
@@ -209,8 +275,14 @@ class _PantallaDetalleRutaState extends State<PantallaDetalleRuta> {
     return Expanded(
       child: Column(
         children: [
-          Text(valor, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-          Text(etiqueta, style: const TextStyle(color: ColoresKufi.textoSuave, fontSize: 12)),
+          Text(
+            valor,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+          ),
+          Text(
+            etiqueta,
+            style: const TextStyle(color: ColoresKufi.textoSuave, fontSize: 12),
+          ),
         ],
       ),
     );

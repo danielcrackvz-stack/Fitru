@@ -7,7 +7,8 @@ import 'notificador.dart';
 Notificador crearNotificador() => NotificadorSistema();
 
 class NotificadorSistema implements Notificador {
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   var _listo = false;
 
   @override

@@ -40,7 +40,13 @@ void main() {
   });
 
   test('el aviso de saldo bajo solo sale al cruzar el umbral', () {
-    expect(correspondeAvisoSaldoBajo(antes: 600, despues: 370, umbral: 500), isTrue);
-    expect(correspondeAvisoSaldoBajo(antes: 400, despues: 170, umbral: 500), isFalse);
+    expect(
+      correspondeAvisoSaldoBajo(antes: 600, despues: 370, umbral: 500),
+      isTrue,
+    );
+    expect(
+      correspondeAvisoSaldoBajo(antes: 400, despues: 170, umbral: 500),
+      isFalse,
+    );
   });
 }

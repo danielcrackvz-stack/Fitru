@@ -1,5 +1,6 @@
 import 'notificador_memoria.dart'
-    if (dart.library.io) 'notificador_io.dart' as impl;
+    if (dart.library.io) 'notificador_io.dart'
+    as impl;
 
 abstract class Notificador {
   Future<void> iniciar();
@@ -17,7 +18,11 @@ class PuertaFcm {
 
   bool get configurado => proyecto.isNotEmpty;
 
-  Future<void> encolar({required String tipo, required String titulo, required String cuerpo}) async {
+  Future<void> encolar({
+    required String tipo,
+    required String titulo,
+    required String cuerpo,
+  }) async {
     if (!configurado) return;
     // El backend (cuando exista) publica con Firebase Admin usando este id de proyecto.
     // El cliente no guarda llaves de servidor.

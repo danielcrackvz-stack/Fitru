@@ -71,6 +71,8 @@ class ResultadoCobro {
   }
 }
 
+const int montoMaximoCentavos = 2000000;
+
 class ServicioPagos {
   ServicioPagos({
     required this.firmador,
@@ -88,34 +90,47 @@ class ServicioPagos {
     required SolicitudCobro solicitud,
   }) {
     if (solicitud.pasajeros < 1 || solicitud.pasajeros > 8) {
-      return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.pasajerosInvalidos, 0);
+      return _rechazo(
+          libro, tokensUsados, solicitud, MotivoRechazo.pasajerosInvalidos, 0);
     }
     final int montoUnitario;
     try {
       montoUnitario = tarifas.montoDe(solicitud.tipoPasaje);
     } on StateError {
-      return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.tarifaInvalida, 0);
+      return _rechazo(
+          libro, tokensUsados, solicitud, MotivoRechazo.tarifaInvalida, 0);
     }
     final monto = montoUnitario * solicitud.pasajeros;
+    if (monto <= 0 || monto > montoMaximoCentavos) {
+      return _rechazo(libro, tokensUsados, solicitud,
+          MotivoRechazo.montoInvalido, monto < 0 ? 0 : monto);
+    }
 
     if (solicitud.forzarRechazoDeLector) {
-      return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.lectorNoResponde, monto);
+      return _rechazo(libro, tokensUsados, solicitud,
+          MotivoRechazo.lectorNoResponde, monto);
     }
 
     final token = solicitud.token;
     if (token != null) {
-      if (!firmador.verificar(token)) {
-        return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.firmaInvalida, monto);
+      if (token.nonce.isEmpty ||
+          token.id.isEmpty ||
+          !firmador.verificar(token)) {
+        return _rechazo(
+            libro, tokensUsados, solicitud, MotivoRechazo.firmaInvalida, monto);
       }
       if (!token.vigenteEn(solicitud.ahora)) {
-        return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.tokenVencido, monto);
+        return _rechazo(
+            libro, tokensUsados, solicitud, MotivoRechazo.tokenVencido, monto);
       }
       if (token.cuentaChoferId != solicitud.cuentaChoferId ||
           (solicitud.rutaId != null && token.rutaId != solicitud.rutaId)) {
-        return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.datosNoCoinciden, monto);
+        return _rechazo(libro, tokensUsados, solicitud,
+            MotivoRechazo.datosNoCoinciden, monto);
       }
       if (token.usoUnico && tokensUsados.contains(token.id)) {
-        return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.yaCobrado, monto);
+        return _rechazo(
+            libro, tokensUsados, solicitud, MotivoRechazo.yaCobrado, monto);
       }
     }
 
@@ -137,16 +152,19 @@ class ServicioPagos {
     if (solicitud.medio != 'manual' &&
         solicitud.vehiculoId != null &&
         _hayCobroReciente(libro, solicitud)) {
-      return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.cobroReciente, monto);
+      return _rechazo(
+          libro, tokensUsados, solicitud, MotivoRechazo.cobroReciente, monto);
     }
 
     final saldo = libro.saldoDe(solicitud.cuentaPasajeroId);
     if (saldo < monto) {
-      return _rechazo(libro, tokensUsados, solicitud, MotivoRechazo.saldoInsuficiente, monto);
+      return _rechazo(libro, tokensUsados, solicitud,
+          MotivoRechazo.saldoInsuficiente, monto);
     }
 
     final pagoId = 'pago-${solicitud.claveIdempotencia}';
-    final sync = solicitud.enLinea ? EstadoSync.sincronizado : EstadoSync.pendiente;
+    final sync =
+        solicitud.enLinea ? EstadoSync.sincronizado : EstadoSync.pendiente;
     final debito = _movimiento(
       solicitud: solicitud,
       pagoId: pagoId,
@@ -197,7 +215,7 @@ class ServicioPagos {
     required String medio,
     required String numeroOperacion,
   }) {
-    if (centavos <= 0) {
+    if (centavos <= 0 || centavos > montoMaximoCentavos) {
       return _rechazo(
         libro,
         const {},
@@ -262,7 +280,10 @@ class ServicioPagos {
     required DateTime ahora,
     required bool enLinea,
   }) {
-    final originales = libro.dePago(pagoId).where((m) => m.tipo == TipoMovimiento.pasaje).toList();
+    final originales = libro
+        .dePago(pagoId)
+        .where((m) => m.tipo == TipoMovimiento.pasaje)
+        .toList();
     if (originales.isEmpty) {
       return ResultadoCobro(
         aceptado: false,
@@ -316,7 +337,8 @@ class ServicioPagos {
       );
     }
     final aplicado = libro.aplicarTodos(reversos);
-    final cuentaPasajero = originales.firstWhere((m) => m.centavos < 0).cuentaId;
+    final cuentaPasajero =
+        originales.firstWhere((m) => m.centavos < 0).cuentaId;
     if (!aplicado.aplicado) {
       return ResultadoCobro(
         aceptado: false,
@@ -335,7 +357,8 @@ class ServicioPagos {
       pendienteDeSync: !enLinea,
       libro: aplicado.libro,
       tokensUsados: const {},
-      montoCentavos: originales.firstWhere((m) => m.centavos < 0).centavos.abs(),
+      montoCentavos:
+          originales.firstWhere((m) => m.centavos < 0).centavos.abs(),
       saldoPasajero: aplicado.libro.saldoDe(cuentaPasajero),
       pagoId: 'reverso-$pagoId',
     );
@@ -344,7 +367,8 @@ class ServicioPagos {
   bool _hayCobroReciente(LibroMayor libro, SolicitudCobro solicitud) {
     for (final movimiento in libro.movimientos) {
       if (movimiento.cuentaId != solicitud.cuentaPasajeroId) continue;
-      if (movimiento.tipo != TipoMovimiento.pasaje || movimiento.centavos >= 0) continue;
+      if (movimiento.tipo != TipoMovimiento.pasaje || movimiento.centavos >= 0)
+        continue;
       if (movimiento.vehiculoId != solicitud.vehiculoId) continue;
       final diferencia = solicitud.ahora.difference(movimiento.creadoEn);
       if (!diferencia.isNegative && diferencia < ventanaAntidoble) return true;
@@ -403,7 +427,11 @@ class ServicioPagos {
 }
 
 class LineaCierre {
-  const LineaCierre({required this.tipo, required this.viajes, required this.pasajeros, required this.centavos});
+  const LineaCierre(
+      {required this.tipo,
+      required this.viajes,
+      required this.pasajeros,
+      required this.centavos});
 
   final TipoPasaje tipo;
   final int viajes;
@@ -435,7 +463,9 @@ class ResumenTurno {
     DateTime? hasta,
   }) {
     final creditos = libro.movimientos.where((m) {
-      if (m.cuentaId != cuentaChoferId || m.tipo != TipoMovimiento.pasaje || m.centavos <= 0) {
+      if (m.cuentaId != cuentaChoferId ||
+          m.tipo != TipoMovimiento.pasaje ||
+          m.centavos <= 0) {
         return false;
       }
       if (desde != null && m.creadoEn.isBefore(desde)) return false;

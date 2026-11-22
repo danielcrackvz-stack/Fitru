@@ -93,7 +93,10 @@ class TablaTarifas {
       nota: nota,
       tarifas: [
         for (final tarifa in tarifas)
-          if (tarifa.tipo == tipo) Tarifa(tipo: tipo, centavos: centavos) else tarifa,
+          if (tarifa.tipo == tipo)
+            Tarifa(tipo: tipo, centavos: centavos)
+          else
+            tarifa,
       ],
     );
   }

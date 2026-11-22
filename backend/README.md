@@ -10,6 +10,7 @@ La app Flutter no necesita esta base para la demo: el libro mayor corre en el te
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/migraciones/001_extensiones.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/migraciones/002_gtfs_rutas.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/migraciones/003_billetera.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/migraciones/004_rls_seguridad.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/semilla/rutas.sql
 ```
 

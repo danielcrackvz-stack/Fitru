@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:kufi_core/kufi_core.dart';
 
 import '../servicios/notificador.dart';
+import '../servicios/radio_kufi.dart';
 import '../servicios/notificador_memoria.dart' show NotificadorMemoria;
 import '../servicios/ubicacion.dart';
+import 'almacen_secreto.dart';
 import 'modelos_app.dart';
 
 const idPasajeroDemo = 'pasajero-demo';
@@ -62,15 +64,24 @@ class EstadoKufi extends ChangeNotifier {
   EstadoKufi({
     required this.almacen,
     required this.cargador,
+    required this.secreto,
+    required this.firmador,
     Notificador? notificador,
-    this.firmador = const FirmadorTokens(secretoDesarrollo),
     this.ubicacionServicio = const ServicioUbicacion(),
-  }) : notificador = notificador ?? crearNotificador();
+    RadioKufi? radio,
+    NfcKufi? nfc,
+  }) : notificador = notificador ?? crearNotificador(),
+       radio = radio ?? RadioKufi(),
+       nfc = nfc ?? NfcKufi();
 
   final AlmacenLocal almacen;
+  final AlmacenSecreto secreto;
   final CargadorCatalogo cargador;
   final Notificador notificador;
   final FirmadorTokens firmador;
+  final RadioKufi radio;
+  final NfcKufi nfc;
+  List<AnuncioVehiculo> anunciosVisibles = [];
   final ServicioUbicacion ubicacionServicio;
   final PuertaFcm fcm = const PuertaFcm();
 
@@ -103,12 +114,16 @@ class EstadoKufi extends ChangeNotifier {
   var enLinea = true;
   var simularRechazo = false;
   var secuencia = 1;
+  ControlIntentosPin intentos = ControlIntentosPin();
   var listo = false;
   String? errorCarga;
   String? captura;
   String codigoSmsDemo = '481936';
 
-  late ServicioPagos servicio = ServicioPagos(firmador: firmador, tarifas: tarifas);
+  late ServicioPagos servicio = ServicioPagos(
+    firmador: firmador,
+    tarifas: tarifas,
+  );
 
   Usuario? get sesion {
     for (final usuario in usuarios) {
@@ -137,13 +152,21 @@ class EstadoKufi extends ChangeNotifier {
   }
 
   /// Para pruebas de widgets: no toca la red ni las preferencias.
-  factory EstadoKufi.paraPruebas({CatalogoRutas? catalogo, bool onboardingListo = false}) {
+  factory EstadoKufi.paraPruebas({
+    CatalogoRutas? catalogo,
+    bool onboardingListo = false,
+  }) {
+    final secreto = AlmacenSecretoMemoria();
     final estado = EstadoKufi(
       almacen: AlmacenMemoria(),
       cargador: () async => catalogo ?? const CatalogoRutas([]),
       notificador: NotificadorMemoria(),
+      secreto: secreto,
+      firmador: FirmadorTokens('prueba-unitaria-kufi'),
     );
     estado._sembrar();
+    estado.instalarPinDePrueba(idPasajeroDemo, '1234');
+    estado.instalarPinDePrueba(idChoferDemo, '1234');
     estado.catalogo = catalogo ?? const CatalogoRutas([]);
     estado.onboardingListo = onboardingListo;
     estado.permisosVistos = onboardingListo;
@@ -165,8 +188,63 @@ class EstadoKufi extends ChangeNotifier {
       errorCarga = '$error';
       catalogo = const CatalogoRutas([]);
     }
+    await _migrarPines();
+    await _asegurarPinesDemo();
     listo = true;
     notifyListeners();
+  }
+
+  Future<void> _migrarPines() async {
+    for (final usuario in usuarios) {
+      if (usuario.pinHashLegado.isEmpty) continue;
+      if (await secreto.leer('pin.${usuario.id}') == null) {
+        await secreto.guardar(
+          'pin.${usuario.id}',
+          'legado:${usuario.pinHashLegado}',
+        );
+      }
+      usuario.pinHashLegado = '';
+    }
+  }
+
+  Future<void> _asegurarPinesDemo() async {
+    for (final usuario in usuarios) {
+      if (usuario.id != idPasajeroDemo && usuario.id != idChoferDemo) continue;
+      if (await secreto.leer('pin.${usuario.id}') == null) {
+        await guardarPin(usuario.id, '1234');
+      }
+    }
+  }
+
+  void instalarPinDePrueba(String id, String pin) {
+    final memoria = secreto;
+    if (memoria is! AlmacenSecretoMemoria) return;
+    const sal = 'sal-de-prueba-16';
+    memoria.poner(
+      'pin.$id',
+      CredencialPin(sal: sal, hash: derivarPin(pin, sal)).serializar(),
+    );
+  }
+
+  Future<void> guardarPin(String id, String pin) async {
+    final sal = salNueva();
+    await secreto.guardar(
+      'pin.$id',
+      CredencialPin(sal: sal, hash: derivarPin(pin, sal)).serializar(),
+    );
+  }
+
+  Future<bool> _pinCoincide(String id, String pin) async {
+    final crudo = await secreto.leer('pin.$id');
+    if (crudo == null) return false;
+    if (crudo.startsWith('legado:')) {
+      final ok = hashesCoinciden(crudo.substring(7), hashPinLegado(pin, id));
+      if (ok) await guardarPin(id, pin);
+      return ok;
+    }
+    final credencial = CredencialPin.parse(crudo);
+    if (credencial == null) return false;
+    return verificarPin(pin, credencial);
   }
 
   Usuario? _usuario(String? id) {
@@ -183,7 +261,8 @@ class EstadoKufi extends ChangeNotifier {
         nombre: 'Juanito Perez Gonzales',
         correo: 'juanito@correo.com',
         telefono: '70123445',
-        pinHash: hashPin('1234', idPasajeroDemo),
+        carnet: '1234567 SC',
+        aceptoTerminos: true,
         rol: Rol.pasajero,
         kycListo: true,
       ),
@@ -192,7 +271,8 @@ class EstadoKufi extends ChangeNotifier {
         nombre: 'Carlos Mamani',
         correo: 'carlos@lospijos.bo',
         telefono: '71234567',
-        pinHash: hashPin('1234', idChoferDemo),
+        carnet: '7654321 SC',
+        aceptoTerminos: true,
         rol: Rol.chofer,
         kycListo: true,
       ),
@@ -278,7 +358,8 @@ class EstadoKufi extends ChangeNotifier {
     simularRechazo = json['simularRechazo'] as bool? ?? false;
     secuencia = (json['secuencia'] as num?)?.toInt() ?? 1;
     sesionId = json['sesionId'] as String?;
-    cuentaActivaPasajero = json['cuentaActivaPasajero'] as String? ?? idPasajeroDemo;
+    cuentaActivaPasajero =
+        json['cuentaActivaPasajero'] as String? ?? idPasajeroDemo;
     cuentaActivaChofer = json['cuentaActivaChofer'] as String? ?? idChoferDemo;
     rolEnPuerta = rolDesde(json['rolEnPuerta'] as String? ?? 'pasajero');
     usuarios = (json['usuarios'] as List<dynamic>? ?? const [])
@@ -287,40 +368,53 @@ class EstadoKufi extends ChangeNotifier {
     avisos = (json['avisos'] as List<dynamic>? ?? const [])
         .map((e) => Aviso.fromJson((e as Map).cast<String, dynamic>()))
         .toList();
-    busquedas = (json['busquedas'] as List<dynamic>? ?? const []).map((e) => '$e').toList();
-    tokensUsados = (json['tokensUsados'] as List<dynamic>? ?? const []).map((e) => '$e').toSet();
-    libro = LibroMayor.fromJson((json['libro'] as Map?)?.cast<String, dynamic>() ?? const {});
+    busquedas = (json['busquedas'] as List<dynamic>? ?? const [])
+        .map((e) => '$e')
+        .toList();
+    tokensUsados = (json['tokensUsados'] as List<dynamic>? ?? const [])
+        .map((e) => '$e')
+        .toSet();
+    libro = LibroMayor.fromJson(
+      (json['libro'] as Map?)?.cast<String, dynamic>() ?? const {},
+    );
     if (json['tarifas'] is Map) {
-      tarifas = TablaTarifas.fromJson((json['tarifas'] as Map).cast<String, dynamic>());
+      tarifas = TablaTarifas.fromJson(
+        (json['tarifas'] as Map).cast<String, dynamic>(),
+      );
       servicio = ServicioPagos(firmador: firmador, tarifas: tarifas);
     }
     final turnoJson = json['turno'];
-    turno = turnoJson is Map ? Turno.fromJson(turnoJson.cast<String, dynamic>()) : null;
-    if (usuarios.isEmpty) _sembrar();
+    turno = turnoJson is Map
+        ? Turno.fromJson(turnoJson.cast<String, dynamic>())
+        : null;
+    intentos = ControlIntentosPin.fromJson(
+      (json['intentos'] as Map?)?.cast<String, dynamic>(),
+    );
   }
 
   Map<String, dynamic> _aJson() => {
-        'onboardingListo': onboardingListo,
-        'permisosVistos': permisosVistos,
-        'permisoNfc': permisoNfc,
-        'permisoBle': permisoBle,
-        'permisoUbicacion': permisoUbicacion,
-        'permisoCamara': permisoCamara,
-        'enLinea': enLinea,
-        'simularRechazo': simularRechazo,
-        'secuencia': secuencia,
-        'sesionId': sesionId,
-        'cuentaActivaPasajero': cuentaActivaPasajero,
-        'cuentaActivaChofer': cuentaActivaChofer,
-        'rolEnPuerta': rolEnPuerta.name,
-        'usuarios': usuarios.map((u) => u.toJson()).toList(),
-        'avisos': avisos.map((a) => a.toJson()).toList(),
-        'busquedas': busquedas,
-        'tokensUsados': tokensUsados.toList(),
-        'libro': libro.toJson(),
-        'tarifas': tarifas.toJson(),
-        'turno': turno?.toJson(),
-      };
+    'onboardingListo': onboardingListo,
+    'permisosVistos': permisosVistos,
+    'permisoNfc': permisoNfc,
+    'permisoBle': permisoBle,
+    'permisoUbicacion': permisoUbicacion,
+    'permisoCamara': permisoCamara,
+    'enLinea': enLinea,
+    'simularRechazo': simularRechazo,
+    'secuencia': secuencia,
+    'sesionId': sesionId,
+    'cuentaActivaPasajero': cuentaActivaPasajero,
+    'cuentaActivaChofer': cuentaActivaChofer,
+    'rolEnPuerta': rolEnPuerta.name,
+    'usuarios': usuarios.map((u) => u.toJson()).toList(),
+    'avisos': avisos.map((a) => a.toJson()).toList(),
+    'busquedas': busquedas,
+    'tokensUsados': tokensUsados.toList(),
+    'libro': libro.toJson(),
+    'tarifas': tarifas.toJson(),
+    'turno': turno?.toJson(),
+    'intentos': intentos.toJson(),
+  };
 
   Future<void> _guardar() => almacen.guardar(_clave, jsonEncode(_aJson()));
 
@@ -353,39 +447,61 @@ class EstadoKufi extends ChangeNotifier {
     notifyListeners();
   }
 
-  String? entrar(String pin) {
+  Future<String?> entrar(String pin) async {
+    final formato = validarPinIngreso(pin);
+    if (!formato.esValido) return formato.mensaje;
+    final ahora = DateTime.now();
+    final bloqueo = intentos.mensajeBloqueo(ahora);
+    if (bloqueo != null) return bloqueo;
     final usuario = rolEnPuerta == Rol.chofer ? cuentaChofer : cuentaPasajero;
     if (usuario == null) return 'No hay una cuenta en este teléfono.';
-    if (usuario.pinHash != hashPin(pin, usuario.id)) return 'PIN incorrecto.';
+    if (!await _pinCoincide(usuario.id, pin)) {
+      final mensaje = intentos.registrarFallo(ahora);
+      _tocar();
+      return mensaje;
+    }
+    intentos.registrarAcierto();
     sesionId = usuario.id;
     _tocar();
     return null;
   }
 
-  String? registrar({
+  Future<String?> registrar({
     required String nombre,
     required String correo,
     required String telefono,
+    required String carnet,
     required String pin,
     required bool anverso,
     required bool reverso,
-  }) {
-    if (nombre.trim().length < 3) return 'Escribe tu nombre completo.';
-    if (!correo.contains('@')) return 'El correo no parece válido.';
-    if (telefono.trim().length < 7) return 'Revisa el teléfono.';
-    if (pin.length != 4) return 'El PIN tiene 4 números.';
+    required bool aceptoTerminos,
+  }) async {
+    final nombreOk = validarNombre(nombre);
+    if (!nombreOk.esValido) return nombreOk.mensaje;
+    final correoOk = validarCorreo(correo);
+    if (!correoOk.esValido) return correoOk.mensaje;
+    final telefonoOk = validarTelefonoBolivia(telefono);
+    if (!telefonoOk.esValido) return telefonoOk.mensaje;
+    final carnetOk = validarCarnet(carnet);
+    if (!carnetOk.esValido) return carnetOk.mensaje;
+    final pinOk = validarPinNuevo(pin);
+    if (!pinOk.esValido) return pinOk.mensaje;
     if (!anverso || !reverso) return 'Faltan las fotos del carnet.';
+    if (!aceptoTerminos)
+      return 'Tienes que aceptar los términos y la política de privacidad.';
     final id = 'u-${DateTime.now().millisecondsSinceEpoch}';
     final usuario = Usuario(
       id: id,
-      nombre: nombre.trim(),
-      correo: correo.trim(),
-      telefono: telefono.trim(),
-      pinHash: hashPin(pin, id),
+      nombre: nombreOk.valor!,
+      correo: correoOk.valor!,
+      telefono: telefonoOk.valor!,
+      carnet: carnetOk.valor!,
+      aceptoTerminos: true,
       rol: Rol.pasajero,
       fotoAnverso: anverso,
       fotoReverso: reverso,
     );
+    await guardarPin(id, pin);
     usuarios.add(usuario);
     cuentaActivaPasajero = id;
     sesionId = id;
@@ -396,14 +512,38 @@ class EstadoKufi extends ChangeNotifier {
 
   bool codigoSmsEsValido(String codigo) => codigo == codigoSmsDemo;
 
-  String? guardarPinNuevo(String pin, {required bool huella}) {
+  Future<String?> guardarPinNuevo(String pin, {required bool huella}) async {
     final usuario = rolEnPuerta == Rol.chofer ? cuentaChofer : cuentaPasajero;
     if (usuario == null) return 'No hay cuenta para actualizar.';
-    if (pin.length != 4) return 'El PIN tiene 4 números.';
-    usuario.pinHash = hashPin(pin, usuario.id);
+    final pinOk = validarPinNuevo(pin);
+    if (!pinOk.esValido) return pinOk.mensaje;
+    await guardarPin(usuario.id, pin);
     usuario.huella = huella;
+    intentos.registrarAcierto();
     _tocar();
     return null;
+  }
+
+  Future<void> borrarCuentaActual() async {
+    final id = sesionId;
+    if (id == null) return;
+    usuarios.removeWhere((usuario) => usuario.id == id);
+    await secreto.borrar('pin.$id');
+    libro = LibroMayor(
+      libro.movimientos.where((movimiento) => movimiento.cuentaId != id),
+    );
+    if (cuentaActivaPasajero == id)
+      cuentaActivaPasajero = usuarios
+          .where((u) => u.rol == Rol.pasajero)
+          .map((u) => u.id)
+          .firstOrNull;
+    if (cuentaActivaChofer == id)
+      cuentaActivaChofer = usuarios
+          .where((u) => u.rol == Rol.chofer)
+          .map((u) => u.id)
+          .firstOrNull;
+    sesionId = null;
+    _tocar();
   }
 
   void cerrarSesion() {
@@ -515,7 +655,9 @@ class EstadoKufi extends ChangeNotifier {
       sentido: sentido,
       medio: medio,
       cuentaChoferId: cuentaChoferId ?? _cuentaDeRuta(ruta),
-      subtitulo: subtitulo ?? 'Pago por ${medioVisible(medio)} · Asoc. ${ruta.operador}',
+      subtitulo:
+          subtitulo ??
+          'Pago por ${medioVisible(medio)} · Asoc. ${ruta.operador}',
       vehiculoId: vehiculo,
       token: token,
     );
@@ -528,7 +670,9 @@ class EstadoKufi extends ChangeNotifier {
   }
 
   void prepararManual(TipoPasaje tipo) {
-    final ruta = catalogo.porId('R069') ?? (catalogo.rutas.isEmpty ? null : catalogo.rutas.first);
+    final ruta =
+        catalogo.porId('R069') ??
+        (catalogo.rutas.isEmpty ? null : catalogo.rutas.first);
     borrador = BorradorPago(
       clave: 'manual-${DateTime.now().microsecondsSinceEpoch}',
       rutaId: ruta?.routeId ?? 'manual',
@@ -544,14 +688,20 @@ class EstadoKufi extends ChangeNotifier {
     notifyListeners();
   }
 
-  String? confirmarBorrador({String? pin}) {
+  Future<String?> confirmarBorrador({String? pin}) async {
     final usuario = sesion;
     final actual = borrador;
-    if (usuario == null || actual == null) return 'No hay un pago para confirmar.';
+    if (usuario == null || actual == null)
+      return 'No hay un pago para confirmar.';
+    final bloqueo = intentos.mensajeBloqueo(DateTime.now());
+    if (bloqueo != null) return bloqueo;
     if (!usuario.huella) {
-      if (pin == null || usuario.pinHash != hashPin(pin, usuario.id)) {
-        return 'PIN incorrecto.';
+      final formato = validarPinIngreso(pin ?? '');
+      if (!formato.esValido) return formato.mensaje;
+      if (!await _pinCoincide(usuario.id, pin!)) {
+        return intentos.registrarFallo(DateTime.now());
       }
+      intentos.registrarAcierto();
     }
     final antes = libro.saldoDe(usuario.id);
     final numero = numeroDeOperacion(DateTime.now(), secuencia);
@@ -599,20 +749,27 @@ class EstadoKufi extends ChangeNotifier {
       _avisar(
         tipo: 'pago_ok',
         titulo: 'Pago exitoso',
-        cuerpo: 'Pagaste ${Dinero(resultado.montoCentavos).texto} en ${actual.nombreRuta}.',
+        cuerpo:
+            'Pagaste ${Dinero(resultado.montoCentavos).texto} en ${actual.nombreRuta}.',
       );
       final despues = resultado.saldoPasajero;
-      if (correspondeAvisoSaldoBajo(antes: antes, despues: despues, umbral: umbralSaldoBajo)) {
+      if (correspondeAvisoSaldoBajo(
+        antes: antes,
+        despues: despues,
+        umbral: umbralSaldoBajo,
+      )) {
         _avisar(
           tipo: 'saldo_bajo',
           titulo: 'Saldo bajo',
-          cuerpo: 'Te quedan ${Dinero(despues).texto}. Recarga para el próximo trufi.',
+          cuerpo:
+              'Te quedan ${Dinero(despues).texto}. Recarga para el próximo trufi.',
         );
       }
       _avisar(
         tipo: 'cobro',
         titulo: 'Cobro recibido',
-        cuerpo: '${actual.tipo.etiqueta} · ${Dinero(resultado.montoCentavos).texto}',
+        cuerpo:
+            '${actual.tipo.etiqueta} · ${Dinero(resultado.montoCentavos).texto}',
       );
     } else if (resultado.aceptado && resultado.pendienteDeSync) {
       _avisar(
@@ -624,7 +781,8 @@ class EstadoKufi extends ChangeNotifier {
       _avisar(
         tipo: 'pago_rechazado',
         titulo: 'Saldo insuficiente',
-        cuerpo: 'No se descontó nada. Te falta ${Dinero(resultado.faltaCentavos).texto}.',
+        cuerpo:
+            'No se descontó nada. Te falta ${Dinero(resultado.faltaCentavos).texto}.',
       );
     } else {
       _avisar(
@@ -640,8 +798,12 @@ class EstadoKufi extends ChangeNotifier {
   String? recargar(int centavos, String medio) {
     final usuario = sesion;
     if (usuario == null) return 'Inicia sesión para recargar.';
+    if (centavos < minimoRecargaCentavos || centavos > maximoRecargaCentavos) {
+      return 'La recarga va de Bs 1,00 a Bs 2.000,00.';
+    }
     final numero = numeroDeOperacion(DateTime.now(), secuencia);
-    final clave = 'recarga-${usuario.id}-${DateTime.now().microsecondsSinceEpoch}';
+    final clave =
+        'recarga-${usuario.id}-${DateTime.now().microsecondsSinceEpoch}';
     final resultado = servicio.recargar(
       libro: libro,
       cuentaId: usuario.id,
@@ -698,27 +860,38 @@ class EstadoKufi extends ChangeNotifier {
       ahora: DateTime.now(),
       enLinea: enLinea,
     );
-    if (!resultado.aceptado) return resultado.motivo?.descripcion ?? 'No se pudo deshacer.';
+    if (!resultado.aceptado)
+      return resultado.motivo?.descripcion ?? 'No se pudo deshacer.';
     libro = resultado.libro;
-    _avisar(tipo: 'reverso', titulo: 'Pago deshecho', cuerpo: 'Devolvimos el monto a tu saldo.');
+    _avisar(
+      tipo: 'reverso',
+      titulo: 'Pago deshecho',
+      cuerpo: 'Devolvimos el monto a tu saldo.',
+    );
     _tocar();
     return null;
   }
 
-  void iniciarTurno(RutaTrufi ruta, String sentido) {
+  String? iniciarTurno(RutaTrufi ruta, String sentido, String placa) {
+    final placaOk = validarPlacaBolivia(placa);
+    if (!placaOk.esValido) return placaOk.mensaje;
     turno = Turno(
       id: 'turno-${DateTime.now().millisecondsSinceEpoch}',
       rutaId: ruta.routeId,
       sentido: sentido,
-      vehiculoId: 'SCZ-107',
+      vehiculoId: placaOk.valor!,
+      placa: placaOk.valor!,
       inicio: DateTime.now(),
     );
     _tocar();
+    publicarAnuncio();
+    return null;
   }
 
   void pausarTurno(bool pausado) {
     turno?.pausado = pausado;
     _tocar();
+    publicarAnuncio();
   }
 
   ResumenTurno resumenDelTurno() {
@@ -733,10 +906,12 @@ class EstadoKufi extends ChangeNotifier {
     final desde = turno?.inicio;
     Movimiento? ultimo;
     for (final movimiento in libro.movimientos) {
-      if (movimiento.cuentaId != idChoferDemo || movimiento.centavos <= 0) continue;
+      if (movimiento.cuentaId != idChoferDemo || movimiento.centavos <= 0)
+        continue;
       if (movimiento.tipo != TipoMovimiento.pasaje) continue;
       if (desde != null && movimiento.creadoEn.isBefore(desde)) continue;
-      if (ultimo == null || movimiento.creadoEn.isAfter(ultimo.creadoEn)) ultimo = movimiento;
+      if (ultimo == null || movimiento.creadoEn.isAfter(ultimo.creadoEn))
+        ultimo = movimiento;
     }
     return ultimo;
   }
@@ -744,6 +919,7 @@ class EstadoKufi extends ChangeNotifier {
   void cerrarDia() {
     if (enLinea) libro = libro.sincronizar();
     turno = null;
+    radio.detener();
     _avisar(
       tipo: 'cierre',
       titulo: 'Día cerrado',
@@ -755,14 +931,17 @@ class EstadoKufi extends ChangeNotifier {
   }
 
   void cargarJornadaDeEjemplo() {
-    final ruta = catalogo.porId('R069') ?? (catalogo.rutas.isEmpty ? null : catalogo.rutas.first);
+    final ruta =
+        catalogo.porId('R069') ??
+        (catalogo.rutas.isEmpty ? null : catalogo.rutas.first);
     final ahora = DateTime.now();
     final inicio = DateTime(ahora.year, ahora.month, ahora.day, 6);
     turno = Turno(
       id: 'turno-ejemplo',
       rutaId: ruta?.routeId ?? 'R069',
       sentido: 'ida',
-      vehiculoId: 'SCZ-107',
+      vehiculoId: '4821KUF',
+      placa: '4821KUF',
       inicio: inicio,
       ejemplo: true,
     );
@@ -813,10 +992,34 @@ class EstadoKufi extends ChangeNotifier {
         minuto: 20 * i,
       );
     }
-    agregar(id: 'ej-ad-4', tipo: TipoPasaje.adulto, pasajeros: 1, pendiente: true, minuto: 90);
-    agregar(id: 'ej-ad-5', tipo: TipoPasaje.adulto, pasajeros: 1, pendiente: true, minuto: 95);
-    agregar(id: 'ej-es', tipo: TipoPasaje.estudiante, pasajeros: 5, pendiente: false, minuto: 110);
-    agregar(id: 'ej-am', tipo: TipoPasaje.adultoMayor, pasajeros: 2, pendiente: false, minuto: 130);
+    agregar(
+      id: 'ej-ad-4',
+      tipo: TipoPasaje.adulto,
+      pasajeros: 1,
+      pendiente: true,
+      minuto: 90,
+    );
+    agregar(
+      id: 'ej-ad-5',
+      tipo: TipoPasaje.adulto,
+      pasajeros: 1,
+      pendiente: true,
+      minuto: 95,
+    );
+    agregar(
+      id: 'ej-es',
+      tipo: TipoPasaje.estudiante,
+      pasajeros: 5,
+      pendiente: false,
+      minuto: 110,
+    );
+    agregar(
+      id: 'ej-am',
+      tipo: TipoPasaje.adultoMayor,
+      pasajeros: 2,
+      pendiente: false,
+      minuto: 130,
+    );
     libro = LibroMayor([...libro.movimientos, ...extras]);
     _tocar();
   }
@@ -906,23 +1109,85 @@ class EstadoKufi extends ChangeNotifier {
         ),
       );
     }
-    return FiltroAnuncios.detectados(anuncios, ahora: ahora, firmador: firmadorAnuncios);
+    return FiltroAnuncios.detectados(
+      anuncios,
+      ahora: ahora,
+      firmador: firmadorAnuncios,
+    );
   }
 
-  void prepararCaptura(String pantalla) {
+  Future<void> publicarAnuncio() async {
+    final actual = turno;
+    if (actual == null || actual.pausado) {
+      await radio.detener();
+      return;
+    }
+    final vence =
+        DateTime.now()
+            .toUtc()
+            .add(const Duration(hours: 8))
+            .millisecondsSinceEpoch ~/
+        1000;
+    final bytes = AnuncioCompacto.codificar(
+      rutaId: actual.rutaId,
+      sentido: actual.sentido,
+      venceEnSegundos: vence,
+      nonce: actual.id.hashCode & 0x7fffffff,
+      secreto: firmador.secreto,
+    );
+    await radio.anunciar(bytes);
+  }
+
+  Future<void> refrescarRadios() async {
+    final ahora = DateTime.now();
+    final hallados = <AnuncioVehiculo>[];
+    for (final crudo in await radio.escanear()) {
+      final rutaId = String.fromCharCodes(crudo.bytes.sublist(2, 6)).trim();
+      final ruta = catalogo.porId(rutaId);
+      final anuncio = AnuncioCompacto.decodificar(
+        bytes: crudo.bytes,
+        rssi: crudo.rssi,
+        secreto: firmador.secreto,
+        ahora: ahora,
+        vehiculoId: crudo.id,
+        cuentaChoferId: idChoferDemo,
+        nombreRuta: ruta?.nombreComun ?? rutaId,
+        operador: ruta?.operador ?? '',
+        jurisdiccion: ruta?.jurisdiccion ?? '',
+        panter: ruta?.panterVisible ?? '',
+      );
+      if (anuncio != null) hallados.add(anuncio);
+    }
+    if (!radio.usaHardware || hallados.isEmpty) {
+      hallados.addAll(anunciosDetectados());
+    }
+    anunciosVisibles = FiltroAnuncios.detectados(
+      hallados,
+      ahora: ahora,
+      firmador: FirmadorAnuncios(firmador.secreto),
+    );
+    notifyListeners();
+  }
+
+  Future<void> prepararCaptura(String pantalla) async {
     captura = pantalla;
     onboardingListo = true;
     permisosVistos = true;
     ubicacion = centroSantaCruz;
     ubicacionEsEjemplo = true;
-    if (pantalla == 'bienvenida' || pantalla == 'permisos' || pantalla == 'ingreso' || pantalla == 'registro') {
+    if (pantalla == 'bienvenida' ||
+        pantalla == 'permisos' ||
+        pantalla == 'ingreso' ||
+        pantalla == 'registro') {
       sesionId = null;
       onboardingListo = pantalla != 'bienvenida';
       permisosVistos = pantalla == 'ingreso' || pantalla == 'registro';
       notifyListeners();
       return;
     }
-    if (pantalla == 'cobro' || pantalla == 'cierre' || pantalla == 'qr-chofer') {
+    if (pantalla == 'cobro' ||
+        pantalla == 'cierre' ||
+        pantalla == 'qr-chofer') {
       sesionId = idChoferDemo;
       rolEnPuerta = Rol.chofer;
       cargarJornadaDeEjemplo();
@@ -934,20 +1199,30 @@ class EstadoKufi extends ChangeNotifier {
       enLinea = false;
       final ruta = catalogo.porId('R069');
       if (ruta != null && sesion != null) {
-        prepararPago(ruta: ruta, sentido: 'ida', medio: 'nfc', clave: 'captura-offline');
+        prepararPago(
+          ruta: ruta,
+          sentido: 'ida',
+          medio: 'nfc',
+          clave: 'captura-offline',
+        );
         borrador!.tipo = TipoPasaje.adulto;
         simularRechazo = false;
         final previo = enLinea;
         enLinea = false;
-        confirmarBorrador(pin: '1234');
+        await confirmarBorrador(pin: '1234');
         enLinea = previo;
         enLinea = false;
       }
     } else if (pantalla == 'recibo') {
       final ruta = catalogo.porId('R069');
       if (ruta != null) {
-        prepararPago(ruta: ruta, sentido: 'ida', medio: 'nfc', clave: 'captura-recibo-${DateTime.now().millisecondsSinceEpoch}');
-        confirmarBorrador(pin: '1234');
+        prepararPago(
+          ruta: ruta,
+          sentido: 'ida',
+          medio: 'nfc',
+          clave: 'captura-recibo-${DateTime.now().millisecondsSinceEpoch}',
+        );
+        await confirmarBorrador(pin: '1234');
       }
     } else if (pantalla == 'saldo') {
       ultimoCobro = UltimoCobro(
@@ -975,8 +1250,13 @@ class EstadoKufi extends ChangeNotifier {
         tipoPasaje: 'Adulto',
         medio: 'NFC',
       );
-    } else if (pantalla == 'confirmar' || pantalla == 'nfc' || pantalla == 'ble' || pantalla == 'qr') {
-      final ruta = catalogo.porId('R069') ?? (catalogo.rutas.isEmpty ? null : catalogo.rutas.first);
+    } else if (pantalla == 'confirmar' ||
+        pantalla == 'nfc' ||
+        pantalla == 'ble' ||
+        pantalla == 'qr') {
+      final ruta =
+          catalogo.porId('R069') ??
+          (catalogo.rutas.isEmpty ? null : catalogo.rutas.first);
       if (ruta != null) {
         prepararPago(
           ruta: ruta,

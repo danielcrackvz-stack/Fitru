@@ -65,7 +65,8 @@ String plegar(String texto) {
 
 /// Todas las palabras de [consulta] deben aparecer en [campos].
 bool coincideConsulta(String consulta, List<String> campos) {
-  final palabras = plegar(consulta).trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+  final palabras =
+      plegar(consulta).trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
   if (palabras.isEmpty) return true;
   final blanco = plegar(campos.join(' '));
   for (final palabra in palabras) {

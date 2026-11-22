@@ -53,7 +53,10 @@ class _PantallaMapaState extends State<PantallaMapa> {
     final consulta = _busqueda.text.trim();
     final resultados = consulta.isEmpty
         ? const <RutaTrufi>[]
-        : estado.catalogo.buscar(consulta, jurisdiccion: _filtro == 'todas' ? null : _filtro);
+        : estado.catalogo.buscar(
+            consulta,
+            jurisdiccion: _filtro == 'todas' ? null : _filtro,
+          );
     final cercanas = estado.catalogo.cercaDe(
       estado.ubicacion,
       jurisdiccion: _filtro == 'todas' ? null : _filtro,
@@ -93,10 +96,16 @@ class _PantallaMapaState extends State<PantallaMapa> {
             left: 8,
             bottom: 210,
             child: DecoratedBox(
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(6),
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                child: Text(_teselas.atribucion, style: const TextStyle(fontSize: 10)),
+                child: Text(
+                  _teselas.atribucion,
+                  style: const TextStyle(fontSize: 10),
+                ),
               ),
             ),
           ),
@@ -126,7 +135,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
                                 icon: const Icon(Icons.close),
                               ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
                       ),
                     ),
                   ),
@@ -144,7 +155,8 @@ class _PantallaMapaState extends State<PantallaMapa> {
                         onTap: () => setState(() => _filtro = 'urbano'),
                       ),
                       _ChipFiltro(
-                        texto: 'Intermunicipales (${estado.catalogo.intermunicipales})',
+                        texto:
+                            'Intermunicipales (${estado.catalogo.intermunicipales})',
                         activo: _filtro == 'intermunicipal',
                         onTap: () => setState(() => _filtro = 'intermunicipal'),
                       ),
@@ -171,7 +183,10 @@ class _PantallaMapaState extends State<PantallaMapa> {
               foregroundColor: ColoresKufi.verde,
               onPressed: () async {
                 await estado.refrescarUbicacion();
-                _mapa.move(LatLng(estado.ubicacion.lat, estado.ubicacion.lon), 14);
+                _mapa.move(
+                  LatLng(estado.ubicacion.lat, estado.ubicacion.lon),
+                  14,
+                );
               },
               child: const Icon(Icons.my_location),
             ),
@@ -186,7 +201,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
                 decoration: const BoxDecoration(
                   color: ColoresKufi.fondo,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-                  boxShadow: [BoxShadow(color: Color(0x22000000), blurRadius: 12)],
+                  boxShadow: [
+                    BoxShadow(color: Color(0x22000000), blurRadius: 12),
+                  ],
                 ),
                 child: ListView(
                   controller: scroll,
@@ -197,14 +214,22 @@ class _PantallaMapaState extends State<PantallaMapa> {
                         width: 42,
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(color: ColoresKufi.superficie3, borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(
+                          color: ColoresKufi.superficie3,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ),
                     Row(
                       children: [
                         Text(
-                          mostrandoBusqueda ? 'Resultados' : 'Rutas que pasan cerca',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                          mostrandoBusqueda
+                              ? 'Resultados'
+                              : 'Rutas que pasan cerca',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
                         ),
                         const Spacer(),
                         TextButton(
@@ -218,16 +243,22 @@ class _PantallaMapaState extends State<PantallaMapa> {
                         padding: EdgeInsets.only(bottom: 8),
                         child: Text(
                           'Ubicación de ejemplo: centro de Santa Cruz. Activa el permiso para usar la tuya.',
-                          style: TextStyle(fontSize: 12, color: ColoresKufi.textoSuave),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: ColoresKufi.textoSuave,
+                          ),
                         ),
                       ),
                     if (mostrandoBusqueda && resultados.isEmpty)
-                      const Text('Ninguna ruta coincide. Prueba con la zona, sin tildes también sirve.'),
+                      const Text(
+                        'Ninguna ruta coincide. Prueba con la zona, sin tildes también sirve.',
+                      ),
                     if (mostrandoBusqueda)
                       for (final ruta in resultados.take(12))
                         _FilaRuta(
                           titulo: ruta.nombreComun,
-                          detalle: '${ruta.etiquetaJurisdiccion} · ${ruta.zonas}',
+                          detalle:
+                              '${ruta.etiquetaJurisdiccion} · ${ruta.zonas}',
                           color: ruta.colorHex,
                           onTap: () => _abrir(ruta),
                         )
@@ -235,7 +266,8 @@ class _PantallaMapaState extends State<PantallaMapa> {
                       for (final cercana in cercanas)
                         _FilaRuta(
                           titulo: cercana.ruta.nombreComun,
-                          detalle: '${cercana.ruta.etiquetaJurisdiccion} · ${cercana.distanciaCorta} · ${cercana.ruta.operador}',
+                          detalle:
+                              '${cercana.ruta.etiquetaJurisdiccion} · ${cercana.distanciaCorta} · ${cercana.ruta.operador}',
                           color: cercana.ruta.colorHex,
                           onTap: () => _abrir(cercana.ruta),
                         ),
@@ -255,7 +287,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
     if (tramo != null && tramo.puntos.isNotEmpty) {
       _mapa.fitCamera(
         CameraFit.coordinates(
-          coordinates: [for (final punto in tramo.puntos) LatLng(punto.lat, punto.lon)],
+          coordinates: [
+            for (final punto in tramo.puntos) LatLng(punto.lat, punto.lon),
+          ],
           padding: const EdgeInsets.fromLTRB(32, 120, 32, 280),
           maxZoom: 15,
         ),
@@ -278,10 +312,17 @@ class _PantallaMapaState extends State<PantallaMapa> {
             : ruta.colorHex;
         salida.add(
           Polyline(
-            points: [for (final punto in tramo.puntos) LatLng(punto.lat, punto.lon)],
+            points: [
+              for (final punto in tramo.puntos) LatLng(punto.lat, punto.lon),
+            ],
             strokeWidth: elegida ? (vuelta ? 4 : 5) : 2.2,
-            color: colorHex(colorBase, apagada ? 0.12 : (elegida ? 0.95 : 0.72)),
-            pattern: vuelta ? StrokePattern.dashed(segments: const [10, 8]) : const StrokePattern.solid(),
+            color: colorHex(
+              colorBase,
+              apagada ? 0.12 : (elegida ? 0.95 : 0.72),
+            ),
+            pattern: vuelta
+                ? StrokePattern.dashed(segments: const [10, 8])
+                : const StrokePattern.solid(),
             hitValue: ruta.routeId,
           ),
         );
@@ -311,14 +352,23 @@ class _PantallaMapaState extends State<PantallaMapa> {
     ];
     final ids = <String>{
       ?_seleccion,
-      for (final cercana in estado.catalogo.cercaDe(estado.ubicacion, limite: 4)) cercana.ruta.routeId,
+      for (final cercana in estado.catalogo.cercaDe(
+        estado.ubicacion,
+        limite: 4,
+      ))
+        cercana.ruta.routeId,
     };
     var fase = 0.05;
     for (final id in ids) {
       final ruta = estado.catalogo.porId(id);
       final tramo = ruta?.ida ?? ruta?.vuelta;
       if (tramo == null || tramo.puntos.length < 2) continue;
-      final posicion = posicionSimulada(linea: tramo.puntos, ahora: ahora, fase: fase, vueltasPorHora: 1.2);
+      final posicion = posicionSimulada(
+        linea: tramo.puntos,
+        ahora: ahora,
+        fase: fase,
+        vueltasPorHora: 1.2,
+      );
       fase += 0.17;
       marcadores.add(
         Marker(
@@ -331,7 +381,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2),
             ),
-            child: const Icon(Icons.directions_bus, color: Colors.white, size: 18),
+            child: const Icon(
+              Icons.directions_bus,
+              color: Colors.white,
+              size: 18,
+            ),
           ),
         ),
       );
@@ -341,7 +395,11 @@ class _PantallaMapaState extends State<PantallaMapa> {
 }
 
 class _ChipFiltro extends StatelessWidget {
-  const _ChipFiltro({required this.texto, required this.activo, required this.onTap});
+  const _ChipFiltro({
+    required this.texto,
+    required this.activo,
+    required this.onTap,
+  });
 
   final String texto;
   final bool activo;
@@ -375,7 +433,12 @@ class _ChipFiltro extends StatelessWidget {
 }
 
 class _FilaRuta extends StatelessWidget {
-  const _FilaRuta({required this.titulo, required this.detalle, required this.color, required this.onTap});
+  const _FilaRuta({
+    required this.titulo,
+    required this.detalle,
+    required this.color,
+    required this.onTap,
+  });
 
   final String titulo;
   final String detalle;
@@ -438,8 +501,18 @@ class _PantallaBuscarState extends State<PantallaBuscar> {
                         hintText: 'Zona o nombre',
                         filled: true,
                         fillColor: Colors.white,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: ColoresKufi.verde)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: ColoresKufi.verde)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: ColoresKufi.verde,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: ColoresKufi.verde,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -462,16 +535,30 @@ class _PantallaBuscarState extends State<PantallaBuscar> {
                 children: [
                   const Padding(
                     padding: EdgeInsets.fromLTRB(8, 8, 8, 4),
-                    child: Text('Resultados', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                    child: Text(
+                      'Resultados',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
                   ),
                   for (final ruta in resultados.take(30))
                     ListTile(
                       leading: CircleAvatar(
                         backgroundColor: colorHex(ruta.colorHex, 0.18),
-                        child: Icon(Icons.directions_bus, color: colorHex(ruta.colorHex)),
+                        child: Icon(
+                          Icons.directions_bus,
+                          color: colorHex(ruta.colorHex),
+                        ),
                       ),
-                      title: Text(ruta.nombreComun, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Text('${ruta.etiquetaJurisdiccion} · ${ruta.zonas}'),
+                      title: Text(
+                        ruta.nombreComun,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(
+                        '${ruta.etiquetaJurisdiccion} · ${ruta.zonas}',
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         estado.recordarBusqueda(_control.text);
@@ -480,14 +567,27 @@ class _PantallaBuscarState extends State<PantallaBuscar> {
                     ),
                   const Padding(
                     padding: EdgeInsets.fromLTRB(8, 12, 8, 4),
-                    child: Text('Búsquedas recientes', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                    child: Text(
+                      'Búsquedas recientes',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Wrap(
                       spacing: 8,
                       children: [
-                        for (final reciente in estado.busquedas.isEmpty ? const ['1er Anillo', '2do Anillo', '4to Anillo'] : estado.busquedas)
+                        for (final reciente
+                            in estado.busquedas.isEmpty
+                                ? const [
+                                    '1er Anillo',
+                                    '2do Anillo',
+                                    '4to Anillo',
+                                  ]
+                                : estado.busquedas)
                           ActionChip(
                             label: Text(reciente),
                             backgroundColor: ColoresKufi.menta,

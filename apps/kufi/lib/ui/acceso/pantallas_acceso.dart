@@ -3,7 +3,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../alcance.dart';
 import '../../estado/modelos_app.dart';
+import 'package:kufi_core/kufi_core.dart';
+
 import '../../tema.dart';
+import '../formatos_entrada.dart';
 import '../widgets.dart';
 
 class PantallaBienvenida extends StatefulWidget {
@@ -43,7 +46,10 @@ class _PantallaBienvenidaState extends State<PantallaBienvenida> {
 
   void _seguir() {
     if (_indice < 2) {
-      _pagina.nextPage(duration: const Duration(milliseconds: 280), curve: Curves.easeOut);
+      _pagina.nextPage(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+      );
       return;
     }
     KufiScope.of(context).terminarOnboarding();
@@ -63,25 +69,48 @@ class _PantallaBienvenidaState extends State<PantallaBienvenida> {
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: gradienteVerde,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(36),
+                ),
               ),
               child: SafeArea(
                 child: Stack(
                   children: [
-                    const Positioned(left: 8, bottom: 8, child: Palmera(alto: 130)),
-                    const Positioned(right: 8, bottom: 8, child: Palmera(alto: 130, reflejo: true)),
+                    const Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: Palmera(alto: 130),
+                    ),
+                    const Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: Palmera(alto: 130, reflejo: true),
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Kufi', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700)),
+                          const Text(
+                            'Kufi',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                           TextButton(
                             onPressed: () {
                               KufiScope.of(context).terminarOnboarding();
                               context.go('/permisos');
                             },
-                            child: const Text('Saltar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                            child: const Text(
+                              'Saltar',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -98,8 +127,15 @@ class _PantallaBienvenidaState extends State<PantallaBienvenida> {
                         child: Container(
                           width: 108,
                           height: 108,
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: Icon(paso.$1, color: ColoresKufi.verde, size: 52),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            paso.$1,
+                            color: ColoresKufi.verde,
+                            size: 52,
+                          ),
                         ),
                       ),
                     ),
@@ -124,7 +160,9 @@ class _PantallaBienvenidaState extends State<PantallaBienvenida> {
                           height: 8,
                           margin: const EdgeInsets.symmetric(horizontal: 3),
                           decoration: BoxDecoration(
-                            color: i == _indice ? ColoresKufi.verde : ColoresKufi.superficie3,
+                            color: i == _indice
+                                ? ColoresKufi.verde
+                                : ColoresKufi.superficie3,
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
@@ -139,21 +177,38 @@ class _PantallaBienvenidaState extends State<PantallaBienvenida> {
                         for (final item in _pasos)
                           Column(
                             children: [
-                              Text(item.$2, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+                              Text(
+                                item.$2,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
                               const SizedBox(height: 10),
-                              Text(item.$3, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ColoresKufi.textoSuave)),
+                              Text(
+                                item.$3,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(color: ColoresKufi.textoSuave),
+                              ),
                             ],
                           ),
                       ],
                     ),
                   ),
-                  BotonKufi(texto: _indice == 2 ? 'Empezar' : 'Siguiente', onPressed: _seguir),
+                  BotonKufi(
+                    texto: _indice == 2 ? 'Empezar' : 'Siguiente',
+                    onPressed: _seguir,
+                  ),
                   if (_indice == 2)
                     TextButton(
                       onPressed: () {
                         final estado = KufiScope.of(context);
                         estado.terminarOnboarding();
-                        estado.guardarPermisos(nfc: true, ble: true, ubicacion: true, camara: true);
+                        estado.guardarPermisos(
+                          nfc: true,
+                          ble: true,
+                          ubicacion: true,
+                          camara: true,
+                        );
                         context.go('/ingresar');
                       },
                       child: const Text('¿Ya tienes cuenta? Ingresar'),
@@ -192,10 +247,15 @@ class _PantallaPermisosState extends State<PantallaPermisos> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Activa los permisos', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 26)),
+              Text(
+                'Activa los permisos',
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineMedium?.copyWith(fontSize: 26),
+              ),
               const SizedBox(height: 8),
               const Text(
-                'Kufi los usa solo para cobrar tu pasaje y mostrarte las rutas. Puedes cambiarlos cuando quieras en Ajustes.',
+                'Kufi los usa solo para cobrar tu pasaje y mostrarte las rutas. La ubicación y el Bluetooth son opcionales (Ley 164 y protección de datos). Puedes cambiarlos en Ajustes.',
                 style: TextStyle(color: ColoresKufi.textoSuave),
               ),
               const SizedBox(height: 18),
@@ -231,14 +291,24 @@ class _PantallaPermisosState extends State<PantallaPermisos> {
               BotonKufi(
                 texto: 'Permitir y continuar',
                 onPressed: () {
-                  KufiScope.of(context).guardarPermisos(nfc: nfc, ble: ble, ubicacion: ubicacion, camara: camara);
+                  KufiScope.of(context).guardarPermisos(
+                    nfc: nfc,
+                    ble: ble,
+                    ubicacion: ubicacion,
+                    camara: camara,
+                  );
                   context.go('/ingresar');
                 },
               ),
               Center(
                 child: TextButton(
                   onPressed: () {
-                    KufiScope.of(context).guardarPermisos(nfc: false, ble: false, ubicacion: false, camara: false);
+                    KufiScope.of(context).guardarPermisos(
+                      nfc: false,
+                      ble: false,
+                      ubicacion: false,
+                      camara: false,
+                    );
                     context.go('/ingresar');
                   },
                   child: const Text('Ahora no'),
@@ -285,12 +355,26 @@ class _Permiso extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(titulo, style: const TextStyle(fontWeight: FontWeight.w700)),
-                Text(detalle, style: const TextStyle(fontSize: 13, color: ColoresKufi.textoSuave)),
+                Text(
+                  titulo,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  detalle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: ColoresKufi.textoSuave,
+                  ),
+                ),
               ],
             ),
           ),
-          Switch(value: valor, activeThumbColor: Colors.white, activeTrackColor: ColoresKufi.verde, onChanged: onChanged),
+          Switch(
+            value: valor,
+            activeThumbColor: Colors.white,
+            activeTrackColor: ColoresKufi.verde,
+            onChanged: onChanged,
+          ),
         ],
       ),
     );
@@ -308,13 +392,14 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
   var _pin = '';
   String? _error;
 
-  void _entrar() {
+  Future<void> _entrar() async {
     final estado = KufiScope.of(context);
-    final mensaje = estado.entrar(_pin);
+    final mensaje = await estado.entrar(_pin);
     if (mensaje != null) {
       setState(() => _error = mensaje);
       return;
     }
+    if (!mounted) return;
     final rol = estado.sesion?.rol;
     context.go(rol == Rol.chofer ? '/chofer/cobro' : '/pasajero/inicio');
   }
@@ -332,13 +417,19 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: gradienteVerde,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(48)),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(48),
+                ),
               ),
               child: const SafeArea(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.directions_bus_filled, color: Colors.white, size: 92),
+                    Icon(
+                      Icons.directions_bus_filled,
+                      color: Colors.white,
+                      size: 92,
+                    ),
                     SizedBox(height: 8),
                     Text(
                       'KUFI',
@@ -363,17 +454,29 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
                 children: [
                   SegmentedButton<Rol>(
                     segments: const [
-                      ButtonSegment(value: Rol.pasajero, label: Text('Pasajero'), icon: Icon(Icons.person_outline)),
-                      ButtonSegment(value: Rol.chofer, label: Text('Chofer'), icon: Icon(Icons.directions_bus)),
+                      ButtonSegment(
+                        value: Rol.pasajero,
+                        label: Text('Pasajero'),
+                        icon: Icon(Icons.person_outline),
+                      ),
+                      ButtonSegment(
+                        value: Rol.chofer,
+                        label: Text('Chofer'),
+                        icon: Icon(Icons.directions_bus),
+                      ),
                     ],
                     selected: {estado.rolEnPuerta},
-                    onSelectionChanged: (valor) => estado.elegirRolEnPuerta(valor.first),
+                    onSelectionChanged: (valor) =>
+                        estado.elegirRolEnPuerta(valor.first),
                   ),
                   const SizedBox(height: 16),
                   CajasCodigo(valor: _pin, largo: 4, ocultar: true),
                   if (_error != null) ...[
                     const SizedBox(height: 8),
-                    Text(_error!, style: const TextStyle(color: ColoresKufi.peligro)),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: ColoresKufi.peligro),
+                    ),
                   ],
                   const SizedBox(height: 8),
                   TecladoNumerico(
@@ -387,7 +490,10 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  BotonKufi(texto: 'Ingresar', onPressed: _pin.length == 4 ? _entrar : null),
+                  BotonKufi(
+                    texto: 'Ingresar',
+                    onPressed: _pin.length == 4 ? _entrar : null,
+                  ),
                   TextButton(
                     onPressed: () => context.push('/recuperar'),
                     child: const Text('¿Olvidaste tu PIN?'),
@@ -399,7 +505,11 @@ class _PantallaIngresoState extends State<PantallaIngreso> {
                         _error = null;
                       });
                     },
-                    child: Text(chofer ? 'Demo chofer: PIN 1234' : 'Demo pasajero: PIN 1234'),
+                    child: Text(
+                      chofer
+                          ? 'Demo chofer: PIN 1234'
+                          : 'Demo pasajero: PIN 1234',
+                    ),
                   ),
                   if (!chofer)
                     TextButton(
@@ -427,9 +537,11 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
   final _nombre = TextEditingController();
   final _correo = TextEditingController();
   final _telefono = TextEditingController();
+  final _carnet = TextEditingController();
   var _pin = '';
   var _anverso = false;
   var _reverso = false;
+  var _aceptoTerminos = false;
   String? _error;
 
   @override
@@ -437,6 +549,7 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
     _nombre.dispose();
     _correo.dispose();
     _telefono.dispose();
+    _carnet.dispose();
     super.dispose();
   }
 
@@ -449,16 +562,56 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
               children: [
-                const SafeArea(bottom: false, child: Align(alignment: Alignment.centerLeft, child: BotonAtras())),
+                const SafeArea(
+                  bottom: false,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: BotonAtras(),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 const Icon(Icons.pets, color: ColoresKufi.palmera, size: 36),
-                Text('Crear cuenta', style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  'Crear cuenta',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 12),
-                TextField(controller: _nombre, decoration: const InputDecoration(labelText: 'Nombre completo')),
-                TextField(controller: _correo, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Correo')),
-                TextField(controller: _telefono, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Teléfono')),
+                TextField(
+                  controller: _nombre,
+                  inputFormatters: [formatoNombre, largoMaximo(maximoNombre)],
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre y apellidos',
+                  ),
+                ),
+                TextField(
+                  controller: _correo,
+                  keyboardType: TextInputType.emailAddress,
+                  inputFormatters: [largoMaximo(maximoCorreo)],
+                  decoration: const InputDecoration(labelText: 'Correo'),
+                ),
+                TextField(
+                  controller: _telefono,
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [formatoTelefono, largoMaximo(14)],
+                  decoration: const InputDecoration(
+                    labelText: 'Celular',
+                    hintText: '7XXXXXXX o +591',
+                  ),
+                ),
+                TextField(
+                  controller: _carnet,
+                  inputFormatters: [formatoCarnet, largoMaximo(16)],
+                  decoration: const InputDecoration(
+                    labelText: 'Carnet de identidad',
+                    hintText: '1234567-1K SC',
+                  ),
+                ),
                 const SizedBox(height: 16),
-                const Text('PIN de 4 números', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'PIN de 4 números',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 8),
                 CajasCodigo(valor: _pin, largo: 4, ocultar: true),
                 TecladoNumerico(
@@ -472,18 +625,72 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                   },
                 ),
                 const SizedBox(height: 8),
-                const Center(child: Text('Carnet de identidad', style: TextStyle(fontWeight: FontWeight.w700))),
+                const Center(
+                  child: Text(
+                    'Carnet de identidad',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Expanded(child: _Foto(texto: 'Foto anterior', activo: _anverso, onTap: () => setState(() => _anverso = !_anverso))),
+                    Expanded(
+                      child: _Foto(
+                        texto: 'Foto anterior',
+                        activo: _anverso,
+                        onTap: () => setState(() => _anverso = !_anverso),
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: _Foto(texto: 'Foto posterior', activo: _reverso, onTap: () => setState(() => _reverso = !_reverso))),
+                    Expanded(
+                      child: _Foto(
+                        texto: 'Foto posterior',
+                        activo: _reverso,
+                        onTap: () => setState(() => _reverso = !_reverso),
+                      ),
+                    ),
                   ],
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _aceptoTerminos,
+                  onChanged: (valor) =>
+                      setState(() => _aceptoTerminos = valor ?? false),
+                  title: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text('Acepto los '),
+                      GestureDetector(
+                        onTap: () => context.push('/legal/terminos'),
+                        child: const Text(
+                          'Términos',
+                          style: TextStyle(
+                            color: ColoresKufi.verde,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const Text(' y la '),
+                      GestureDetector(
+                        onTap: () => context.push('/legal/privacidad'),
+                        child: const Text(
+                          'Política de privacidad',
+                          style: TextStyle(
+                            color: ColoresKufi.verde,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const Text(' (borrador).'),
+                    ],
+                  ),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),
-                  Text(_error!, style: const TextStyle(color: ColoresKufi.peligro)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: ColoresKufi.peligro),
+                  ),
                 ],
               ],
             ),
@@ -500,15 +707,18 @@ class _PantallaRegistroState extends State<PantallaRegistro> {
                 const Positioned(left: 0, bottom: 0, child: Palmera(alto: 90)),
                 BotonKufi(
                   texto: 'Crear',
-                  onPressed: () {
-                    final mensaje = KufiScope.of(context).registrar(
+                  onPressed: () async {
+                    final mensaje = await KufiScope.of(context).registrar(
                       nombre: _nombre.text,
                       correo: _correo.text,
                       telefono: _telefono.text,
+                      carnet: _carnet.text,
                       pin: _pin,
                       anverso: _anverso,
                       reverso: _reverso,
+                      aceptoTerminos: _aceptoTerminos,
                     );
+                    if (!context.mounted) return;
                     if (mensaje != null) {
                       setState(() => _error = mensaje);
                       return;
@@ -545,12 +755,17 @@ class _Foto extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: activo ? ColoresKufi.verde : ColoresKufi.borde),
+            border: Border.all(
+              color: activo ? ColoresKufi.verde : ColoresKufi.borde,
+            ),
           ),
           child: Text(
             activo ? '$texto\nlista' : texto,
             textAlign: TextAlign.center,
-            style: TextStyle(color: activo ? ColoresKufi.verde : ColoresKufi.textoSuave, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: activo ? ColoresKufi.verde : ColoresKufi.textoSuave,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -564,14 +779,26 @@ class PantallaVerificacion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(leading: const BotonAtras(), title: const Text('Verificación')),
+      appBar: AppBar(
+        leading: const BotonAtras(),
+        title: const Text('Verificación'),
+      ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         child: Column(
           children: [
-            const IconoEnCirculo(icono: Icons.schedule, fondo: Color(0xFFFFF3D8), color: ColoresKufi.aviso, tamano: 84),
+            const IconoEnCirculo(
+              icono: Icons.schedule,
+              fondo: Color(0xFFFFF3D8),
+              color: ColoresKufi.aviso,
+              tamano: 84,
+            ),
             const SizedBox(height: 16),
-            Text('Estamos revisando tu carnet', style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
+            Text(
+              'Estamos revisando tu carnet',
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
             const Text(
               'Suele tardar menos de 24 horas. Te avisaremos cuando tu cuenta esté lista para pagar.',
@@ -583,8 +810,15 @@ class PantallaVerificacion extends StatelessWidget {
               child: Column(
                 children: [
                   _Check(texto: 'Datos personales', listo: true),
-                  _Check(texto: 'Foto del carnet (anverso y reverso)', listo: true),
-                  _Check(texto: 'Revisión del equipo Kufi', listo: false, enCurso: true),
+                  _Check(
+                    texto: 'Foto del carnet (anverso y reverso)',
+                    listo: true,
+                  ),
+                  _Check(
+                    texto: 'Revisión del equipo Kufi',
+                    listo: false,
+                    enCurso: true,
+                  ),
                   _Check(texto: 'Cuenta habilitada para pagos', listo: false),
                 ],
               ),
@@ -593,17 +827,27 @@ class PantallaVerificacion extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: ColoresKufi.menta, borderRadius: BorderRadius.circular(14)),
+              decoration: BoxDecoration(
+                color: ColoresKufi.menta,
+                borderRadius: BorderRadius.circular(14),
+              ),
               child: const Row(
                 children: [
                   Icon(Icons.menu_book_outlined, color: ColoresKufi.verde),
                   SizedBox(width: 8),
-                  Expanded(child: Text('Mientras tanto ya puedes ver las rutas en el mapa.')),
+                  Expanded(
+                    child: Text(
+                      'Mientras tanto ya puedes ver las rutas en el mapa.',
+                    ),
+                  ),
                 ],
               ),
             ),
             const Spacer(),
-            BotonKufi(texto: 'Ir al mapa', onPressed: () => context.go('/pasajero/mapa')),
+            BotonKufi(
+              texto: 'Ir al mapa',
+              onPressed: () => context.go('/pasajero/mapa'),
+            ),
             const SizedBox(height: 8),
             BotonKufi(
               texto: 'Contactar soporte',
@@ -613,8 +857,15 @@ class PantallaVerificacion extends StatelessWidget {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Soporte Kufi'),
-                    content: const Text('Escríbenos a hola@kufi.bo. En esta demo el mensaje no se envía.'),
-                    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar'))],
+                    content: const Text(
+                      'Escríbenos a hola@kufi.bo. En esta demo el mensaje no se envía.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cerrar'),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -627,7 +878,11 @@ class PantallaVerificacion extends StatelessWidget {
 }
 
 class _Check extends StatelessWidget {
-  const _Check({required this.texto, required this.listo, this.enCurso = false});
+  const _Check({
+    required this.texto,
+    required this.listo,
+    this.enCurso = false,
+  });
 
   final String texto;
   final bool listo;
@@ -635,8 +890,12 @@ class _Check extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icono = listo ? Icons.check_circle : (enCurso ? Icons.schedule : Icons.circle_outlined);
-    final color = listo ? ColoresKufi.verde : (enCurso ? ColoresKufi.aviso : ColoresKufi.superficie3);
+    final icono = listo
+        ? Icons.check_circle
+        : (enCurso ? Icons.schedule : Icons.circle_outlined);
+    final color = listo
+        ? ColoresKufi.verde
+        : (enCurso ? ColoresKufi.aviso : ColoresKufi.superficie3);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -664,24 +923,46 @@ class _PantallaRecuperarPinState extends State<PantallaRecuperarPin> {
   @override
   Widget build(BuildContext context) {
     final estado = KufiScope.of(context);
-    final usuario = estado.rolEnPuerta == Rol.chofer ? estado.cuentaChofer : estado.cuentaPasajero;
+    final usuario = estado.rolEnPuerta == Rol.chofer
+        ? estado.cuentaChofer
+        : estado.cuentaPasajero;
     return Scaffold(
-      appBar: AppBar(leading: const BotonAtras(), title: const Text('Recuperar PIN')),
+      appBar: AppBar(
+        leading: const BotonAtras(),
+        title: const Text('Recuperar PIN'),
+      ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Paso 2 de 3', style: TextStyle(color: ColoresKufi.verde, fontWeight: FontWeight.w700)),
+            const Text(
+              'Paso 2 de 3',
+              style: TextStyle(
+                color: ColoresKufi.verde,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text('Ingresa el código', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 26)),
+            Text(
+              'Ingresa el código',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontSize: 26),
+            ),
             const SizedBox(height: 8),
-            Text('Te enviamos un código de 6 dígitos por SMS al ${usuario?.telefonoEnmascarado ?? '+591'}. En esta demo el código es ${estado.codigoSmsDemo}.'),
+            Text(
+              'Te enviamos un código de 6 dígitos por SMS al ${usuario?.telefonoEnmascarado ?? '+591'}. En esta demo el código es ${estado.codigoSmsDemo}.',
+            ),
             const SizedBox(height: 18),
             CajasCodigo(valor: _codigo, largo: 6),
             const SizedBox(height: 8),
-            const Text('Reenviar código en 0:42', style: TextStyle(color: ColoresKufi.textoSuave)),
-            if (_error != null) Text(_error!, style: const TextStyle(color: ColoresKufi.peligro)),
+            const Text(
+              'Reenviar código en 0:42',
+              style: TextStyle(color: ColoresKufi.textoSuave),
+            ),
+            if (_error != null)
+              Text(_error!, style: const TextStyle(color: ColoresKufi.peligro)),
             const Spacer(),
             TecladoNumerico(
               onDigito: (d) {
@@ -690,7 +971,9 @@ class _PantallaRecuperarPinState extends State<PantallaRecuperarPin> {
               },
               onBorrar: () {
                 if (_codigo.isEmpty) return;
-                setState(() => _codigo = _codigo.substring(0, _codigo.length - 1));
+                setState(
+                  () => _codigo = _codigo.substring(0, _codigo.length - 1),
+                );
               },
             ),
             const SizedBox(height: 8),
@@ -707,7 +990,12 @@ class _PantallaRecuperarPinState extends State<PantallaRecuperarPin> {
                   : null,
             ),
             const SizedBox(height: 8),
-            const Center(child: Text('¿Cambiaste de número? Recupera con tu carnet', style: TextStyle(color: ColoresKufi.textoSuave))),
+            const Center(
+              child: Text(
+                '¿Cambiaste de número? Recupera con tu carnet',
+                style: TextStyle(color: ColoresKufi.textoSuave),
+              ),
+            ),
           ],
         ),
       ),
@@ -730,15 +1018,29 @@ class _PantallaNuevoPinState extends State<PantallaNuevoPin> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(leading: const BotonAtras(), title: const Text('Nuevo PIN')),
+      appBar: AppBar(
+        leading: const BotonAtras(),
+        title: const Text('Nuevo PIN'),
+      ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Paso 3 de 3', style: TextStyle(color: ColoresKufi.verde, fontWeight: FontWeight.w700)),
+            const Text(
+              'Paso 3 de 3',
+              style: TextStyle(
+                color: ColoresKufi.verde,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text('Crea tu nuevo PIN', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 26)),
+            Text(
+              'Crea tu nuevo PIN',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontSize: 26),
+            ),
             const SizedBox(height: 8),
             const Text('Usa 4 números que no sean tu fecha de nacimiento.'),
             const SizedBox(height: 16),
@@ -759,8 +1061,17 @@ class _PantallaNuevoPinState extends State<PantallaNuevoPin> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Pagar con huella', style: TextStyle(fontWeight: FontWeight.w700)),
-                        Text('Confirma tus pagos sin escribir el PIN', style: TextStyle(color: ColoresKufi.textoSuave, fontSize: 13)),
+                        Text(
+                          'Pagar con huella',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          'Confirma tus pagos sin escribir el PIN',
+                          style: TextStyle(
+                            color: ColoresKufi.textoSuave,
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -776,12 +1087,20 @@ class _PantallaNuevoPinState extends State<PantallaNuevoPin> {
             const SizedBox(height: 8),
             const Row(
               children: [
-                Icon(Icons.lock_outline, size: 16, color: ColoresKufi.textoSuave),
+                Icon(
+                  Icons.lock_outline,
+                  size: 16,
+                  color: ColoresKufi.textoSuave,
+                ),
                 SizedBox(width: 6),
-                Text('Tu huella nunca sale de tu celular', style: TextStyle(color: ColoresKufi.textoSuave)),
+                Text(
+                  'Tu huella nunca sale de tu celular',
+                  style: TextStyle(color: ColoresKufi.textoSuave),
+                ),
               ],
             ),
-            if (_error != null) Text(_error!, style: const TextStyle(color: ColoresKufi.peligro)),
+            if (_error != null)
+              Text(_error!, style: const TextStyle(color: ColoresKufi.peligro)),
             const Spacer(),
             TecladoNumerico(
               onDigito: (d) {
@@ -796,13 +1115,15 @@ class _PantallaNuevoPinState extends State<PantallaNuevoPin> {
             const SizedBox(height: 8),
             BotonKufi(
               texto: 'Guardar PIN',
-              onPressed: () {
-                final mensaje = KufiScope.of(context).guardarPinNuevo(_pin, huella: _huella);
+              onPressed: () async {
+                final ruta = GoRouter.of(context);
+                final mensaje = await KufiScope.of(context).guardarPinNuevo(_pin, huella: _huella);
+                if (!mounted) return;
                 if (mensaje != null) {
                   setState(() => _error = mensaje);
                   return;
                 }
-                context.go('/ingresar');
+                ruta.go('/ingresar');
               },
             ),
           ],

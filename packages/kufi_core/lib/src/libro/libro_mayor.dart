@@ -11,6 +11,7 @@ enum MotivoRechazo {
   cobroReciente,
   lectorNoResponde,
   pagoNoEncontrado,
+  montoInvalido,
 }
 
 extension MotivoRechazoTexto on MotivoRechazo {
@@ -36,6 +37,8 @@ extension MotivoRechazoTexto on MotivoRechazo {
         return 'K-402';
       case MotivoRechazo.pagoNoEncontrado:
         return 'K-404';
+      case MotivoRechazo.montoInvalido:
+        return 'K-422';
     }
   }
 
@@ -61,6 +64,8 @@ extension MotivoRechazoTexto on MotivoRechazo {
         return 'lector no responde';
       case MotivoRechazo.pagoNoEncontrado:
         return 'no hay un pago para deshacer';
+      case MotivoRechazo.montoInvalido:
+        return 'monto no válido';
     }
   }
 }
@@ -81,7 +86,8 @@ class ResultadoLibro {
   final Movimiento? movimiento;
 
   factory ResultadoLibro.ok(LibroMayor libro, Movimiento movimiento) {
-    return ResultadoLibro._(aplicado: true, duplicado: false, libro: libro, movimiento: movimiento);
+    return ResultadoLibro._(
+        aplicado: true, duplicado: false, libro: libro, movimiento: movimiento);
   }
 
   factory ResultadoLibro.duplicado(LibroMayor libro, Movimiento movimiento) {
@@ -95,7 +101,8 @@ class ResultadoLibro {
   }
 
   factory ResultadoLibro.rechazo(LibroMayor libro, MotivoRechazo motivo) {
-    return ResultadoLibro._(aplicado: false, duplicado: false, libro: libro, motivo: motivo);
+    return ResultadoLibro._(
+        aplicado: false, duplicado: false, libro: libro, motivo: motivo);
   }
 }
 
@@ -133,15 +140,20 @@ class LibroMayor {
     return lista;
   }
 
-  int get pendientes => _movimientos.where((m) => m.sync == EstadoSync.pendiente).length;
+  int get pendientes =>
+      _movimientos.where((m) => m.sync == EstadoSync.pendiente).length;
 
   ResultadoLibro aplicar(Movimiento movimiento) {
     final previo = porClave(movimiento.claveIdempotencia);
     if (previo != null) return ResultadoLibro.duplicado(this, previo);
-    if (movimiento.centavos < 0 && saldoDe(movimiento.cuentaId) + movimiento.centavos < 0) {
+    if (movimiento.centavos == 0)
+      return ResultadoLibro.rechazo(this, MotivoRechazo.montoInvalido);
+    if (movimiento.centavos < 0 &&
+        saldoDe(movimiento.cuentaId) + movimiento.centavos < 0) {
       return ResultadoLibro.rechazo(this, MotivoRechazo.saldoInsuficiente);
     }
-    return ResultadoLibro.ok(LibroMayor([..._movimientos, movimiento]), movimiento);
+    return ResultadoLibro.ok(
+        LibroMayor([..._movimientos, movimiento]), movimiento);
   }
 
   /// Aplica varios apuntes como una sola operación.

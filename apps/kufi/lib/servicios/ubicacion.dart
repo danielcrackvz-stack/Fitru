@@ -15,7 +15,8 @@ class ServicioUbicacion {
       if (permiso == LocationPermission.denied) {
         permiso = await Geolocator.requestPermission();
       }
-      if (permiso == LocationPermission.denied || permiso == LocationPermission.deniedForever) {
+      if (permiso == LocationPermission.denied ||
+          permiso == LocationPermission.deniedForever) {
         return null;
       }
       final posicion = await Geolocator.getCurrentPosition();

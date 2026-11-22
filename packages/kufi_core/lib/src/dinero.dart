@@ -37,7 +37,8 @@ class Dinero {
   }
 
   @override
-  bool operator ==(Object other) => other is Dinero && other.centavos == centavos;
+  bool operator ==(Object other) =>
+      other is Dinero && other.centavos == centavos;
 
   @override
   int get hashCode => centavos.hashCode;

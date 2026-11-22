@@ -19,7 +19,9 @@ double haversineMetros(Coord a, Coord b) {
   final dLon = (b.lon - a.lon) * math.pi / 180;
   final h = math.pow(math.sin(dLat / 2), 2) +
       math.cos(lat1) * math.cos(lat2) * math.pow(math.sin(dLon / 2), 2);
-  return 2 * _radioTierraMetros * math.asin(math.min(1, math.sqrt(h.toDouble())));
+  return 2 *
+      _radioTierraMetros *
+      math.asin(math.min(1, math.sqrt(h.toDouble())));
 }
 
 /// Distancia de un punto al segmento, en metros, con proyección local.
@@ -47,14 +49,19 @@ double distanciaATrazadoMetros(Coord punto, List<Coord> linea) {
   if (linea.length == 1) return haversineMetros(punto, linea.first);
   var mejor = double.infinity;
   for (var i = 1; i < linea.length; i++) {
-    final distancia = distanciaPuntoSegmentoMetros(punto, linea[i - 1], linea[i]);
+    final distancia =
+        distanciaPuntoSegmentoMetros(punto, linea[i - 1], linea[i]);
     if (distancia < mejor) mejor = distancia;
   }
   return mejor;
 }
 
 class Limites {
-  const Limites({required this.sur, required this.oeste, required this.norte, required this.este});
+  const Limites(
+      {required this.sur,
+      required this.oeste,
+      required this.norte,
+      required this.este});
 
   final double sur;
   final double oeste;

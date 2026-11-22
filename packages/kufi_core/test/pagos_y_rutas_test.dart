@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:kufi_core/kufi_core.dart';
 import 'package:test/test.dart';
 
+const secretoPrueba = 'prueba-unitaria-kufi';
+
 void main() {
   group('Dinero', () {
     test('formatea bolivianos con coma decimal', () {
@@ -29,7 +31,8 @@ void main() {
         coincideConsulta('los piyos', ['Trufi Los Piyós', 'La Guardia']),
         isTrue,
       );
-      expect(coincideConsulta('anillo norte', ['1er Anillo', 'centro']), isFalse);
+      expect(
+          coincideConsulta('anillo norte', ['1er Anillo', 'centro']), isFalse);
     });
   });
 
@@ -89,7 +92,8 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
     test('busca por zona sin tildes y filtra jurisdicción', () {
       expect(catalogo.buscar('piyós').map((r) => r.routeId), ['R069']);
       expect(catalogo.buscar('anillo', jurisdiccion: 'urbano'), hasLength(1));
-      expect(catalogo.buscar('anillo', jurisdiccion: 'intermunicipal'), isEmpty);
+      expect(
+          catalogo.buscar('anillo', jurisdiccion: 'intermunicipal'), isEmpty);
       expect(catalogo.urbanas, 1);
       expect(catalogo.intermunicipales, 1);
     });
@@ -126,8 +130,9 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
   });
 
   group('Libro y pagos', () {
-    final firmador = FirmadorTokens(secretoDesarrollo);
-    final servicio = ServicioPagos(firmador: firmador, tarifas: TablaTarifas.porDefecto);
+    final firmador = FirmadorTokens(secretoPrueba);
+    final servicio =
+        ServicioPagos(firmador: firmador, tarifas: TablaTarifas.porDefecto);
     final ahora = DateTime.utc(2026, 11, 21, 16, 24);
 
     LibroMayor conSaldo(int centavos) {
@@ -166,7 +171,12 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
       );
     }
 
-    SolicitudCobro solicitud(TokenPago qr, {String clave = 'cobro-1', bool enLinea = true, int pasajeros = 1, TipoPasaje tipo = TipoPasaje.adulto, DateTime? momento}) {
+    SolicitudCobro solicitud(TokenPago qr,
+        {String clave = 'cobro-1',
+        bool enLinea = true,
+        int pasajeros = 1,
+        TipoPasaje tipo = TipoPasaje.adulto,
+        DateTime? momento}) {
       return SolicitudCobro(
         claveIdempotencia: clave,
         cuentaPasajeroId: 'pasajero-demo',
@@ -224,7 +234,8 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
 
     test('rechaza firma rota o token vencido sin tocar el saldo', () {
       final qr = token();
-      final roto = TokenPago.fromJson({...qr.toJson(), 'firma': 'no-es-valida'});
+      final roto =
+          TokenPago.fromJson({...qr.toJson(), 'firma': 'no-es-valida'});
       final firma = servicio.cobrar(
         libro: conSaldo(5000),
         tokensUsados: {},
@@ -232,7 +243,8 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
       );
       expect(firma.motivo, MotivoRechazo.firmaInvalida);
 
-      final viejo = token(vence: ahora.subtract(const Duration(seconds: 1)), id: 'tok-viejo');
+      final viejo = token(
+          vence: ahora.subtract(const Duration(seconds: 1)), id: 'tok-viejo');
       final vencido = servicio.cobrar(
         libro: conSaldo(5000),
         tokensUsados: {},
@@ -265,7 +277,8 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
       expect(sincronizado.saldoDe('pasajero-demo'), 4770);
     });
 
-    test('bloquea un segundo cobro del mismo vehículo dentro de la ventana', () {
+    test('bloquea un segundo cobro del mismo vehículo dentro de la ventana',
+        () {
       final primeroQr = token(id: 'tok-a', usoUnico: true);
       final libro = servicio
           .cobrar(
@@ -313,7 +326,8 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
       );
       expect(revertido.aceptado, isTrue);
       expect(revertido.saldoPasajero, 5000);
-      expect(revertido.libro.movimientos.length, greaterThan(cobro.libro.movimientos.length));
+      expect(revertido.libro.movimientos.length,
+          greaterThan(cobro.libro.movimientos.length));
       final otraVez = servicio.revertir(
         libro: revertido.libro,
         pagoId: cobro.pagoId!,
@@ -361,7 +375,8 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
         libro = resultado.libro;
         usados = resultado.tokensUsados;
       }
-      final resumen = ResumenTurno.desde(libro: libro, cuentaChoferId: 'chofer-demo');
+      final resumen =
+          ResumenTurno.desde(libro: libro, cuentaChoferId: 'chofer-demo');
       expect(resumen.viajes, 4);
       expect(resumen.pasajeros, 4);
       expect(resumen.totalCentavos, 230 + 230 + 100 + 150);
@@ -373,8 +388,9 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
   });
 
   group('Bluetooth y NFC', () {
-    test('se queda con la señal fuerte y descarta el RSSI bajo o la firma mala', () {
-      final firmador = FirmadorAnuncios(secretoDesarrollo);
+    test('se queda con la señal fuerte y descarta el RSSI bajo o la firma mala',
+        () {
+      final firmador = FirmadorAnuncios(secretoPrueba);
       final ahora = DateTime.utc(2026, 11, 21, 12);
       AnuncioVehiculo anuncio(String id, int rssi) {
         return firmador.sellar(
@@ -423,8 +439,10 @@ R054,"ASOC. ATL","1er Anillo Blanco (ATL)",True,nombre dudoso,1er Anillo,ATL,Aso
 
     test('en iOS el NFC queda como no disponible y el QR siempre sirve', () {
       expect(TransportesDePago.qr.funcionaSinHardware, isTrue);
-      expect(TransportesDePago.nfc(PlataformaNfc.ios).descripcion, contains('HCE'));
-      expect(TransportesDePago.nfc(PlataformaNfc.android).descripcion, contains('opcional'));
+      expect(TransportesDePago.nfc(PlataformaNfc.ios).descripcion,
+          contains('HCE'));
+      expect(TransportesDePago.nfc(PlataformaNfc.android).descripcion,
+          contains('opcional'));
     });
   });
 }

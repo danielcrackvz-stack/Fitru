@@ -131,7 +131,10 @@ class _PantallaNfcState extends State<PantallaNfc>
               texto: 'Ya lo acerqué',
               onPressed: borrador == null
                   ? null
-                  : () => context.push('/pago/confirmar'),
+                  : () async {
+                      await estado.nfc.empezarEmulacion(borrador.nombreRuta);
+                      if (context.mounted) context.push('/pago/confirmar');
+                    },
             ),
             const SizedBox(height: 8),
             BotonKufi(
@@ -156,7 +159,9 @@ class PantallaBle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final estado = KufiScope.of(context);
-    final anuncios = estado.anunciosDetectados();
+    final anuncios = estado.anunciosVisibles.isEmpty
+        ? estado.anunciosDetectados()
+        : estado.anunciosVisibles;
     final principal = anuncios.isEmpty ? null : anuncios.first;
     final otros = anuncios.length < 2
         ? const <AnuncioVehiculo>[]
@@ -166,6 +171,7 @@ class PantallaBle extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
+          const _BuscarRadio(),
           Positioned.fill(
             child: FlutterMap(
               options: const MapOptions(
@@ -356,6 +362,26 @@ class PantallaBle extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BuscarRadio extends StatefulWidget {
+  const _BuscarRadio();
+
+  @override
+  State<_BuscarRadio> createState() => _BuscarRadioState();
+}
+
+class _BuscarRadioState extends State<_BuscarRadio> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) KufiScope.of(context).refrescarRadios();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 PlataformaNfc _plataformaNfc(TargetPlatform plataforma) {
@@ -575,13 +601,14 @@ class _PantallaConfirmarPagoState extends State<PantallaConfirmarPago> {
                 huella: estado.sesion?.huella ?? false,
               );
               if (pin == null || !context.mounted) return;
-              final mensaje = estado.confirmarBorrador(
+              final mensaje = await estado.confirmarBorrador(
                 pin: pin == 'huella' ? null : pin,
               );
               if (!context.mounted) return;
               if (mensaje != null) {
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(mensaje)));
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(mensaje)));
                 return;
               }
               context.go('/pago/resultado');
@@ -725,8 +752,9 @@ class PantallaManual extends StatelessWidget {
                       children: [
                         Expanded(child: Text(TipoPasaje.values[i].etiqueta)),
                         Text(
-                          Dinero(estado.tarifas.montoDe(TipoPasaje.values[i]))
-                              .texto,
+                          Dinero(
+                            estado.tarifas.montoDe(TipoPasaje.values[i]),
+                          ).texto,
                         ),
                       ],
                     ),
@@ -759,13 +787,14 @@ class PantallaManual extends StatelessWidget {
                         huella: estado.sesion?.huella ?? false,
                       );
                       if (pin == null || !context.mounted) return;
-                      final mensaje = estado.confirmarBorrador(
+                      final mensaje = await estado.confirmarBorrador(
                         pin: pin == 'huella' ? null : pin,
                       );
                       if (!context.mounted) return;
                       if (mensaje != null) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(SnackBar(content: Text(mensaje)));
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(mensaje)));
                         return;
                       }
                       context.go('/pago/resultado');
@@ -791,7 +820,8 @@ class PantallaResultado extends StatelessWidget {
     }
     if (cobro.aceptado && cobro.pendiente) return const _SinConexion();
     if (cobro.aceptado) return const PantallaRecibo(pagoId: 'ultima');
-    if (cobro.motivo == MotivoRechazo.saldoInsuficiente) return const _SaldoInsuficiente();
+    if (cobro.motivo == MotivoRechazo.saldoInsuficiente)
+      return const _SaldoInsuficiente();
     return const _Rechazado();
   }
 }

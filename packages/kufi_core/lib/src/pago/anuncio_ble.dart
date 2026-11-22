@@ -92,14 +92,16 @@ class FirmadorAnuncios {
   }
 
   bool verificar(AnuncioVehiculo anuncio) {
-    final esperado = firmar(secreto, [
-      anuncio.vehiculoId,
-      anuncio.cuentaChoferId,
-      anuncio.rutaId,
-      anuncio.sentido,
-      anuncio.nonce,
-      anuncio.venceEn.toUtc().toIso8601String(),
-    ].join('|'));
+    final esperado = firmar(
+        secreto,
+        [
+          anuncio.vehiculoId,
+          anuncio.cuentaChoferId,
+          anuncio.rutaId,
+          anuncio.sentido,
+          anuncio.nonce,
+          anuncio.venceEn.toUtc().toIso8601String(),
+        ].join('|'));
     return firmasCoinciden(esperado, anuncio.firma);
   }
 }

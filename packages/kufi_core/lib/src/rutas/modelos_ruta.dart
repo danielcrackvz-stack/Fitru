@@ -74,9 +74,11 @@ class RutaTrufi {
 
   TramoRuta? get principal => ida ?? vuelta;
 
-  List<TramoRuta> get tramos => [if (ida != null) ida!, if (vuelta != null) vuelta!];
+  List<TramoRuta> get tramos =>
+      [if (ida != null) ida!, if (vuelta != null) vuelta!];
 
-  TramoRuta? tramo(String sentido) => sentido == 'vuelta' ? (vuelta ?? ida) : (ida ?? vuelta);
+  TramoRuta? tramo(String sentido) =>
+      sentido == 'vuelta' ? (vuelta ?? ida) : (ida ?? vuelta);
 
   String get panterVisible {
     final partes = <String>[
