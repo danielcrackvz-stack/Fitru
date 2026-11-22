@@ -14,6 +14,8 @@ class TramoSugerido {
     this.sentido,
     this.nombre,
     this.colorHex,
+    this.operador,
+    this.sindicato,
   });
 
   final bool aPie;
@@ -24,6 +26,8 @@ class TramoSugerido {
   final String? sentido;
   final String? nombre;
   final String? colorHex;
+  final String? operador;
+  final String? sindicato;
 }
 
 class ItinerarioSugerido {
@@ -76,45 +80,88 @@ class PlanificadorViajes {
       : indice = indice ?? IndiceCercania.desde(catalogo) {
     for (final ruta in catalogo.rutas) {
       for (final tramo in ruta.tramos) {
-        _muestras.addAll(_muestrear(tramo));
+        final muestras = _muestrear(tramo);
+        if (muestras.isEmpty) continue;
+        final clave = '${tramo.rutaId}|${tramo.sentido}';
+        _porLinea[clave] = muestras;
+        for (final muestra in muestras) {
+          _celdas.putIfAbsent(_claveCelda(muestra.punto), () => []).add(muestra);
+        }
       }
     }
   }
 
   final CatalogoRutas catalogo;
   final IndiceCercania indice;
-  final List<_Muestra> _muestras = [];
+  final Map<String, List<_Muestra>> _porLinea = {};
+  final Map<String, List<_Muestra>> _celdas = {};
 
   static const double _metrosPorMinutoAPie = 75;
-  static const double _maximoAndar = 800;
   static const double _maximoTransbordo = 450;
+  static const double _celda = 0.004;
 
   List<ItinerarioSugerido> proponer({
     required Coord origen,
     required Coord destino,
     required int tarifaCentavos,
-    int limite = 5,
+    int limite = 8,
+    double radioAndar = 800,
   }) {
-    final ideas = <ItinerarioSugerido>[];
+    final radio = radioAndar < 100 ? 100.0 : radioAndar;
+    final directos = _directos(origen, destino, tarifaCentavos, radio);
+    final cambios = _conTransbordo(origen, destino, tarifaCentavos, radio);
     final aPie = haversineMetros(origen, destino);
-    if (aPie <= 1800) {
-      ideas.add(_soloAPie(origen, destino, aPie));
-    }
-    ideas.addAll(_directos(origen, destino, tarifaCentavos));
-    ideas.addAll(_conTransbordo(origen, destino, tarifaCentavos));
-    ideas.sort((a, b) {
-      final porTiempo = a.minutos.compareTo(b.minutos);
-      if (porTiempo != 0) return porTiempo;
+    final pie = aPie <= 1800 ? [_soloAPie(origen, destino, aPie)] : <ItinerarioSugerido>[];
+    int porTiempo(ItinerarioSugerido a, ItinerarioSugerido b) {
+      final minutos = a.minutos.compareTo(b.minutos);
+      if (minutos != 0) return minutos;
       return a.metrosCaminando.compareTo(b.metrosCaminando);
-    });
+    }
+
+    directos.sort(porTiempo);
+    cambios.sort(porTiempo);
     final vistos = <String>{};
     final unicos = <ItinerarioSugerido>[];
-    for (final idea in ideas) {
-      final clave = idea.tramos.map((t) => '${t.routeId ?? 'pie'}:${t.metros.round()}').join('|');
-      if (vistos.add(clave)) unicos.add(idea);
-      if (unicos.length >= limite) break;
+    void tomar(List<ItinerarioSugerido> lista, int cupo) {
+      var puestos = 0;
+      for (final idea in lista) {
+        final clave = idea.tramos.map((t) => '${t.routeId ?? 'pie'}:${t.sentido ?? ''}:${t.metros.round()}').join('|');
+        if (!vistos.add(clave)) continue;
+        unicos.add(idea);
+        puestos++;
+        if (puestos >= cupo || unicos.length >= limite) return;
+      }
     }
+
+    tomar(directos, 5);
+    tomar(cambios, 4);
+    if (unicos.length < limite) tomar(pie, 1);
     return unicos;
+  }
+
+  String _claveCelda(Coord punto) {
+    final x = (punto.lon / _celda).floor();
+    final y = (punto.lat / _celda).floor();
+    return '$x:$y';
+  }
+
+  List<_Muestra> _cerca(Coord punto, double radio) {
+    final margen = (radio / 111320) + _celda;
+    final x0 = ((punto.lon - margen) / _celda).floor();
+    final x1 = ((punto.lon + margen) / _celda).floor();
+    final y0 = ((punto.lat - margen) / _celda).floor();
+    final y1 = ((punto.lat + margen) / _celda).floor();
+    final vistos = <_Muestra>{};
+    final salida = <_Muestra>[];
+    for (var x = x0; x <= x1; x++) {
+      for (var y = y0; y <= y1; y++) {
+        for (final muestra in _celdas['$x:$y'] ?? const <_Muestra>[]) {
+          if (!vistos.add(muestra)) continue;
+          if (haversineMetros(punto, muestra.punto) <= radio) salida.add(muestra);
+        }
+      }
+    }
+    return salida;
   }
 
   ItinerarioSugerido _soloAPie(Coord origen, Coord destino, double metros) {
@@ -130,23 +177,27 @@ class PlanificadorViajes {
     );
   }
 
-  List<ItinerarioSugerido> _directos(Coord origen, Coord destino, int tarifa) {
-    final porSentido = <String, List<_Muestra>>{};
-    for (final muestra in _muestras) {
-      porSentido.putIfAbsent('${muestra.routeId}|${muestra.sentido}', () => []).add(muestra);
+  List<ItinerarioSugerido> _directos(Coord origen, Coord destino, int tarifa, double radio) {
+    final subidas = <String, List<_Muestra>>{};
+    final bajadas = <String, List<_Muestra>>{};
+    for (final muestra in _cerca(origen, radio)) {
+      subidas.putIfAbsent('${muestra.routeId}|${muestra.sentido}', () => []).add(muestra);
+    }
+    for (final muestra in _cerca(destino, radio)) {
+      bajadas.putIfAbsent('${muestra.routeId}|${muestra.sentido}', () => []).add(muestra);
     }
     final salida = <ItinerarioSugerido>[];
-    for (final grupo in porSentido.values) {
+    for (final clave in subidas.keys) {
+      final grupoBajada = bajadas[clave];
+      if (grupoBajada == null) continue;
       _Muestra? subida;
       _Muestra? bajada;
       var mejor = double.infinity;
-      for (final candidataSubida in grupo) {
+      for (final candidataSubida in subidas[clave]!) {
         final andar = haversineMetros(origen, candidataSubida.punto);
-        if (andar > _maximoAndar) continue;
-        for (final candidataBajada in grupo) {
+        for (final candidataBajada in grupoBajada) {
           if (candidataBajada.orden <= candidataSubida.orden) continue;
           final llegar = haversineMetros(candidataBajada.punto, destino);
-          if (llegar > _maximoAndar) continue;
           final costo = andar + llegar;
           if (costo < mejor) {
             mejor = costo;
@@ -184,6 +235,8 @@ class PlanificadorViajes {
         sentido: subida.sentido,
         nombre: ruta?.nombreComun,
         colorHex: ruta?.colorHex,
+        operador: ruta?.operador,
+        sindicato: ruta?.federacion,
       ),
       if (andarVuelta > 20)
         TramoSugerido(aPie: true, puntos: [bajada.punto, destino], metros: andarVuelta, minutos: andarVuelta / _metrosPorMinutoAPie),
@@ -197,9 +250,9 @@ class PlanificadorViajes {
     );
   }
 
-  List<ItinerarioSugerido> _conTransbordo(Coord origen, Coord destino, int tarifa) {
-    final salidas = _mejoresCercanas(origen, true);
-    final llegadas = _mejoresCercanas(destino, false);
+  List<ItinerarioSugerido> _conTransbordo(Coord origen, Coord destino, int tarifa, double radio) {
+    final salidas = _mejoresCercanas(origen, true, radio);
+    final llegadas = _mejoresCercanas(destino, false, radio);
     final salida = <ItinerarioSugerido>[];
     for (final subida in salidas) {
       for (final bajada in llegadas) {
@@ -207,21 +260,20 @@ class PlanificadorViajes {
         final puente = _puente(subida, bajada);
         if (puente == null) continue;
         salida.add(_armarTransbordo(origen, destino, subida, puente.$1, puente.$2, bajada, tarifa));
-        if (salida.length > 12) return salida;
+        if (salida.length > 8) return salida;
       }
     }
     return salida;
   }
 
-  List<_Muestra> _mejoresCercanas(Coord punto, bool esOrigen) {
+  List<_Muestra> _mejoresCercanas(Coord punto, bool esOrigen, double radio) {
     final mejor = <String, _Muestra>{};
     final distancia = <String, double>{};
-    for (final muestra in _muestras) {
-      final metros = haversineMetros(punto, muestra.punto);
-      if (metros > _maximoAndar) continue;
+    for (final muestra in _cerca(punto, radio)) {
       if (esOrigen && muestra.metros > muestra.metrosTotales * 0.92) continue;
       if (!esOrigen && muestra.metros < muestra.metrosTotales * 0.08) continue;
       final clave = '${muestra.routeId}|${muestra.sentido}';
+      final metros = haversineMetros(punto, muestra.punto);
       final previa = distancia[clave];
       if (previa == null || metros < previa) {
         distancia[clave] = metros;
@@ -235,24 +287,38 @@ class PlanificadorViajes {
   }
 
   (_Muestra, _Muestra)? _puente(_Muestra subida, _Muestra bajada) {
+    final primero = _porLinea['${subida.routeId}|${subida.sentido}'] ?? const <_Muestra>[];
+    final segundo = _porLinea['${bajada.routeId}|${bajada.sentido}'] ?? const <_Muestra>[];
+    final posteriores = <_Muestra>[];
+    final rejilla = <String, List<_Muestra>>{};
+    for (final muestra in segundo) {
+      if (muestra.orden >= bajada.orden) continue;
+      posteriores.add(muestra);
+      rejilla.putIfAbsent(_claveCelda(muestra.punto), () => []).add(muestra);
+    }
+    if (posteriores.isEmpty) return null;
     (_Muestra, _Muestra)? mejor;
     var caminata = double.infinity;
-    final delPrimero = _muestras.where(
-      (m) => m.routeId == subida.routeId && m.sentido == subida.sentido && m.orden > subida.orden,
-    );
-    final delSegundo = _muestras.where(
-      (m) => m.routeId == bajada.routeId && m.sentido == bajada.sentido && m.orden < bajada.orden,
-    );
-    final segundos = delSegundo.toList();
     var paso = 0;
-    for (final bajaAqui in delPrimero) {
+    final margen = (_maximoTransbordo / 111320) + _celda;
+    for (final bajaAqui in primero) {
+      if (bajaAqui.orden <= subida.orden) continue;
       if (paso++ % 2 == 1) continue;
-      for (final subeAlli in segundos) {
-        final metros = haversineMetros(bajaAqui.punto, subeAlli.punto);
-        if (metros > _maximoTransbordo || metros >= caminata) continue;
-        caminata = metros;
-        mejor = (bajaAqui, subeAlli);
+      final x0 = ((bajaAqui.punto.lon - margen) / _celda).floor();
+      final x1 = ((bajaAqui.punto.lon + margen) / _celda).floor();
+      final y0 = ((bajaAqui.punto.lat - margen) / _celda).floor();
+      final y1 = ((bajaAqui.punto.lat + margen) / _celda).floor();
+      for (var x = x0; x <= x1; x++) {
+        for (var y = y0; y <= y1; y++) {
+          for (final subeAlli in rejilla['$x:$y'] ?? const <_Muestra>[]) {
+            final metros = haversineMetros(bajaAqui.punto, subeAlli.punto);
+            if (metros > _maximoTransbordo || metros >= caminata) continue;
+            caminata = metros;
+            mejor = (bajaAqui, subeAlli);
+          }
+        }
       }
+      if (caminata < 40) return mejor;
     }
     return mejor;
   }

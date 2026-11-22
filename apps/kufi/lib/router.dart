@@ -9,6 +9,7 @@ import 'ui/legal/pantalla_legal.dart';
 import 'ui/mapa/pantalla_detalle.dart';
 import 'ui/mapa/pantalla_explorar.dart';
 import 'ui/mapa/pantalla_mapa.dart';
+import 'ui/mapa/pantalla_plan.dart';
 import 'ui/mapa/pantalla_viaje.dart';
 import 'ui/pago/pantallas_pago.dart';
 import 'ui/pasajero/pantallas_pasajero.dart';
@@ -100,7 +101,7 @@ GoRouter crearRouter(EstadoKufi estado) {
         routes: [
           GoRoute(
             path: '/pasajero/inicio',
-            builder: (context, state) => const PantallaInicio(),
+            builder: (context, state) => const PantallaPlan(),
           ),
           GoRoute(
             path: '/pasajero/mapa',
@@ -219,7 +220,7 @@ class PantallaCaptura extends StatelessWidget {
       'ingreso' => const PantallaIngreso(),
       'registro' => const PantallaRegistro(),
       'verificacion' => const PantallaVerificacion(),
-      'inicio' => const PantallaInicio(),
+      'inicio' || 'a-donde' || 'menu-mapa' || 'opciones' || 'transbordo' => const PantallaPlan(),
       'mapa' => const PantallaMapa(),
       'recarga' => const PantallaRecarga(),
       'perfil' => const PantallaPerfil(),
@@ -240,10 +241,17 @@ class PantallaCaptura extends StatelessWidget {
       _ => const PantallaInicio(),
     };
     if (pantalla == 'inicio' ||
+        pantalla == 'a-donde' ||
+        pantalla == 'menu-mapa' ||
+        pantalla == 'opciones' ||
+        pantalla == 'transbordo' ||
         pantalla == 'mapa' ||
         pantalla == 'recarga' ||
         pantalla == 'perfil') {
-      return CascaronPasajero(ruta: '/pasajero/$pantalla', child: pagina);
+      final ruta = pantalla == 'mapa' || pantalla == 'recarga' || pantalla == 'perfil'
+          ? '/pasajero/$pantalla'
+          : '/pasajero/inicio';
+      return CascaronPasajero(ruta: ruta, child: pagina);
     }
     return pagina;
   }

@@ -413,7 +413,7 @@ class CascaronPasajero extends StatelessWidget {
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
-            label: 'Inicio',
+            label: 'Viaje',
           ),
           NavigationDestination(
             icon: Icon(Icons.map_outlined),

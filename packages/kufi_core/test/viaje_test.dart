@@ -3,6 +3,15 @@ import 'dart:io';
 import 'package:kufi_core/kufi_core.dart';
 import 'package:test/test.dart';
 
+CatalogoRutas? _catalogoReal;
+
+CatalogoRutas catalogoReal() {
+  return _catalogoReal ??= AnalizadorRutas.desdeGeoJson(
+    File('../../datos/rutas.geojson').readAsStringSync(),
+    csv: File('../../datos/rutas_nombres.csv').readAsStringSync(),
+  );
+}
+
 void main() {
   const geo = '''
 {"type":"FeatureCollection","features":[
@@ -73,5 +82,57 @@ void main() {
     expect(cerca, isNotEmpty);
     expect(cerca.every((r) => r.metros <= 800), isTrue);
     expect(red.dentroDe(const Coord(-17.7834, -63.1821), 100, archivo), isEmpty);
+  });
+
+  test('pares reales de Santa Cruz tienen directo y transbordo', () {
+    final plan = PlanificadorViajes(catalogoReal());
+    final directoAnillo = plan.proponer(
+      origen: const Coord(-17.79242, -63.18148),
+      destino: const Coord(-17.77468, -63.17862),
+      tarifaCentavos: 230,
+    );
+    final directoSegundo = plan.proponer(
+      origen: const Coord(-17.79959, -63.19109),
+      destino: const Coord(-17.77423, -63.16607),
+      tarifaCentavos: 230,
+    );
+    final cambio = plan.proponer(
+      origen: const Coord(-17.81137, -63.15961),
+      destino: const Coord(-17.81689, -63.11577),
+      tarifaCentavos: 230,
+    );
+    expect(
+      directoAnillo.any((i) => i.transbordos == 0 && i.tramos.any((t) => t.routeId == 'R054' && t.sentido == 'ida')),
+      isTrue,
+      reason: '1er Anillo Blanco debería salir directo',
+    );
+    expect(
+      directoSegundo.any((i) => i.transbordos == 0 && i.tramos.any((t) => t.routeId == 'R049' && t.sentido == 'ida')),
+      isTrue,
+      reason: '2do Anillo debería salir directo',
+    );
+    final transbordos = cambio.where((i) => i.transbordos == 1).toList();
+    expect(transbordos, isNotEmpty);
+    expect(transbordos.first.tramos.where((t) => !t.aPie).length, 2);
+    expect(transbordos.first.centavos, 460);
+    expect(cambio.indexWhere((i) => i.transbordos == 0), lessThan(cambio.indexWhere((i) => i.transbordos == 1)));
+  });
+
+  test('proponer varios pares reales tarda menos de un segundo', () {
+    final inicio = DateTime.now();
+    final plan = PlanificadorViajes(catalogoReal());
+    const pares = [
+      (Coord(-17.79242, -63.18148), Coord(-17.77468, -63.17862)),
+      (Coord(-17.79959, -63.19109), Coord(-17.77423, -63.16607)),
+      (Coord(-17.81137, -63.15961), Coord(-17.81689, -63.11577)),
+      (Coord(-17.78525, -63.15254), Coord(-17.76872, -63.20111)),
+      (Coord(-17.81405, -63.18281), Coord(-17.76794, -63.20281)),
+    ];
+    for (final par in pares) {
+      final ideas = plan.proponer(origen: par.$1, destino: par.$2, tarifaCentavos: 230);
+      expect(ideas, isNotEmpty);
+    }
+    final ms = DateTime.now().difference(inicio).inMilliseconds;
+    expect(ms, lessThan(1000), reason: 'armado + 5 consultas tardaron $ms ms');
   });
 }
