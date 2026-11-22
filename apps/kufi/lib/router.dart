@@ -7,7 +7,9 @@ import 'ui/acceso/pantallas_acceso.dart';
 import 'ui/chofer/pantallas_chofer.dart';
 import 'ui/legal/pantalla_legal.dart';
 import 'ui/mapa/pantalla_detalle.dart';
+import 'ui/mapa/pantalla_explorar.dart';
 import 'ui/mapa/pantalla_mapa.dart';
+import 'ui/mapa/pantalla_viaje.dart';
 import 'ui/pago/pantallas_pago.dart';
 import 'ui/pasajero/pantallas_pasajero.dart';
 import 'ui/widgets.dart';
@@ -117,6 +119,14 @@ GoRouter crearRouter(EstadoKufi estado) {
       GoRoute(
         path: '/pasajero/buscar',
         builder: (context, state) => const PantallaBuscar(),
+      ),
+      GoRoute(
+        path: '/pasajero/rutas',
+        builder: (context, state) => const PantallaExplorar(),
+      ),
+      GoRoute(
+        path: '/pasajero/viaje',
+        builder: (context, state) => const PantallaViaje(),
       ),
       GoRoute(
         path: '/pasajero/historial',

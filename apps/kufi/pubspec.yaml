@@ -1,5 +1,5 @@
 name: kufi
-description: Billetera para pagar trufis y minibuses en Santa Cruz de la Sierra.
+description: Subí, billetera para pagar trufis y minibuses en Santa Cruz de la Sierra.
 publish_to: none
 version: 0.1.0+1
 
@@ -27,6 +27,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   flutter_blue_plus: ^1.35.5
   flutter_ble_peripheral: ^3.2.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:

@@ -40,7 +40,7 @@ class NotificadorSistema implements Notificador {
           android: AndroidNotificationDetails(
             'kufi_pagos',
             'Pagos',
-            channelDescription: 'Pagos, recargas y saldo de Kufi',
+            channelDescription: 'Pagos, recargas y saldo de Subí',
             importance: Importance.high,
             priority: Priority.high,
           ),

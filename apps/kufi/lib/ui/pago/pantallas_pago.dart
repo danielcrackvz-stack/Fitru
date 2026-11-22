@@ -1045,7 +1045,7 @@ class PantallaRecibo extends StatelessWidget {
     final pasaje = movimiento?.tipo == TipoMovimiento.recarga
         ? 'Recarga'
         : '${movimiento?.tipoPasaje ?? cobro?.tipoPasaje ?? 'Adulto'} × $pasajeros';
-    final medio = movimiento?.medio ?? cobro?.medio ?? 'Billetera Kufi';
+    final medio = movimiento?.medio ?? cobro?.medio ?? 'Billetera Subí';
     final numero = movimiento?.numeroOperacion ?? cobro?.numeroOperacion ?? '';
     final saldo = usuario == null ? 0 : estado.saldoDe(usuario.id);
     final vista = UltimoCobroVista(
@@ -1055,7 +1055,7 @@ class PantallaRecibo extends StatelessWidget {
       ruta: ruta,
       operador: operador == null ? null : 'Asoc. $operador',
       pasaje: pasaje,
-      medio: '$medio · Billetera Kufi',
+      medio: '$medio · Billetera Subí',
       numero: numero,
     );
     return Scaffold(
@@ -1095,7 +1095,7 @@ class PantallaRecibo extends StatelessWidget {
                   FilaDato(etiqueta: 'Pasaje', valor: pasaje),
                   FilaDato(
                     etiqueta: 'Método',
-                    valor: '$medio · Billetera Kufi',
+                    valor: '$medio · Billetera Subí',
                   ),
                   FilaDato(
                     etiqueta: 'Saldo después',

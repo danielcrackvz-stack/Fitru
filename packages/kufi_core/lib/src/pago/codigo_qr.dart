@@ -23,7 +23,7 @@ class CodigoQrPago {
   static TokenPago leer(String codigo) {
     final limpio = codigo.trim();
     if (!limpio.startsWith(esquema)) {
-      throw FormatoQrInvalido('El código no es un QR de Kufi.');
+      throw FormatoQrInvalido('El código no es un QR de Subí.');
     }
     final cuerpo = limpio.substring(esquema.length);
     final relleno = '=' * ((4 - cuerpo.length % 4) % 4);

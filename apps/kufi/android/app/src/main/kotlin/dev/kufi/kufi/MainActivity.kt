@@ -10,7 +10,7 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.kufi/nfc").setMethodCallHandler { call, result ->
             when (call.method) {
                 "empezar" -> {
-                    KufiHostApduService.mensajeActual = call.argument<String>("contenido") ?: "Kufi"
+                    KufiHostApduService.mensajeActual = call.argument<String>("contenido") ?: "Subi"
                     result.success(true)
                 }
                 "detener" -> {

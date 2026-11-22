@@ -8,6 +8,7 @@ build/
 .idea/
 .DS_Store
 .env
+tools/gtfs_salida/
 coverage/
 android/.gradle/
 android/local.properties
