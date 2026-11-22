@@ -26,6 +26,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
   final _teselas = ConfigTeselas.desdeEntorno();
   String _filtro = 'todas';
   String? _seleccion;
+  int _radio = 300;
   Timer? _reloj;
 
   @override
@@ -57,10 +58,13 @@ class _PantallaMapaState extends State<PantallaMapa> {
             consulta,
             jurisdiccion: _filtro == 'todas' ? null : _filtro,
           );
-    final cercanas = estado.catalogo.cercaDe(
-      estado.ubicacion,
+    final foco = estado.pinMapa ?? estado.ubicacion;
+    final cercanas = estado.indice.dentroDe(
+      foco,
+      _radio.toDouble(),
+      estado.catalogo,
       jurisdiccion: _filtro == 'todas' ? null : _filtro,
-      limite: 8,
+      limite: 12,
     );
     final polilineas = _polilineas(estado);
     return Scaffold(
@@ -80,6 +84,9 @@ class _PantallaMapaState extends State<PantallaMapa> {
                   jurisdiccion: _filtro == 'todas' ? null : _filtro,
                 );
                 setState(() => _seleccion = cercana?.ruta.routeId);
+              },
+              onLongPress: (tap, punto) {
+                estado.fijarPin(Coord(punto.latitude, punto.longitude));
               },
             ),
             children: [
@@ -162,6 +169,22 @@ class _PantallaMapaState extends State<PantallaMapa> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      for (final radio in radiosCercania)
+                        _ChipFiltro(
+                          texto: '$radio m',
+                          activo: _radio == radio,
+                          onTap: () => setState(() => _radio = radio),
+                        ),
+                      _ChipFiltro(
+                        texto: 'Cómo llego',
+                        activo: false,
+                        onTap: () => context.push('/pasajero/viaje'),
+                      ),
+                    ],
+                  ),
                   if (_teselas.esOsmPublico)
                     const Padding(
                       padding: EdgeInsets.only(top: 6),
@@ -225,7 +248,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                         Text(
                           mostrandoBusqueda
                               ? 'Resultados'
-                              : 'Rutas que pasan cerca',
+                              : 'Rutas a $_radio m',
                           style: const TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
@@ -233,8 +256,8 @@ class _PantallaMapaState extends State<PantallaMapa> {
                         ),
                         const Spacer(),
                         TextButton(
-                          onPressed: () => context.push('/pasajero/buscar'),
-                          child: const Text('Ver todas'),
+                          onPressed: () => context.push('/pasajero/rutas'),
+                          child: const Text('Explorar'),
                         ),
                       ],
                     ),

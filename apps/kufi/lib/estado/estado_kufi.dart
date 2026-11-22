@@ -94,6 +94,15 @@ class EstadoKufi extends ChangeNotifier {
   List<Usuario> usuarios = [];
   List<Aviso> avisos = [];
   List<String> busquedas = [];
+  Set<String> favoritos = {};
+  ItinerarioSugerido? itinerarioElegido;
+  Coord? pinMapa;
+  IndiceCercania? _indice;
+  PlanificadorViajes? _plan;
+
+  IndiceCercania get indice => _indice ??= IndiceCercania.desde(catalogo);
+
+  PlanificadorViajes get planificador => _plan ??= PlanificadorViajes(catalogo, indice: indice);
   Set<String> tokensUsados = {};
   Turno? turno;
   String? sesionId;
@@ -371,6 +380,9 @@ class EstadoKufi extends ChangeNotifier {
     busquedas = (json['busquedas'] as List<dynamic>? ?? const [])
         .map((e) => '$e')
         .toList();
+    favoritos = (json['favoritos'] as List<dynamic>? ?? const [])
+        .map((e) => '$e')
+        .toSet();
     tokensUsados = (json['tokensUsados'] as List<dynamic>? ?? const [])
         .map((e) => '$e')
         .toSet();
@@ -408,7 +420,8 @@ class EstadoKufi extends ChangeNotifier {
     'rolEnPuerta': rolEnPuerta.name,
     'usuarios': usuarios.map((u) => u.toJson()).toList(),
     'avisos': avisos.map((a) => a.toJson()).toList(),
-    'busquedas': busquedas,
+        'busquedas': busquedas,
+        'favoritos': favoritos.toList(),
     'tokensUsados': tokensUsados.toList(),
     'libro': libro.toJson(),
     'tarifas': tarifas.toJson(),
@@ -597,6 +610,23 @@ class EstadoKufi extends ChangeNotifier {
     tarifas = tarifas.reemplazar(tipo, centavos);
     servicio = ServicioPagos(firmador: firmador, tarifas: tarifas);
     _tocar();
+  }
+
+  void alternarFavorito(String routeId) {
+    if (!favoritos.add(routeId)) favoritos.remove(routeId);
+    _tocar();
+  }
+
+  bool esFavorito(String routeId) => favoritos.contains(routeId);
+
+  void fijarPin(Coord? punto) {
+    pinMapa = punto;
+    notifyListeners();
+  }
+
+  void elegirItinerario(ItinerarioSugerido itinerario) {
+    itinerarioElegido = itinerario;
+    notifyListeners();
   }
 
   void recordarBusqueda(String consulta) {
