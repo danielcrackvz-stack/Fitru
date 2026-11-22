@@ -90,12 +90,10 @@ ResultadoValidacion validarCarnet(String texto) {
   }
   final numero = coincidencia.group(1)!;
   final complemento = coincidencia.group(2);
-  final normal = [
-    numero,
-    if (complemento != null) '-$complemento',
-    if (extension != null) ' $extension',
-  ].join();
-  return ResultadoValidacion.ok(normal);
+  final normal = StringBuffer(numero);
+  if (complemento != null) normal.write('-$complemento');
+  if (extension != null) normal.write(' $extension');
+  return ResultadoValidacion.ok(normal.toString());
 }
 
 ResultadoValidacion validarPinIngreso(String pin) {
