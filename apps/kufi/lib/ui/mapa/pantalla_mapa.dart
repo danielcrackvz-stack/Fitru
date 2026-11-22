@@ -181,7 +181,7 @@ class _PantallaMapaState extends State<PantallaMapa> {
                       _ChipFiltro(
                         texto: 'Cómo llego',
                         activo: false,
-                        onTap: () => context.push('/pasajero/viaje'),
+                        onTap: () => context.go('/pasajero/inicio'),
                       ),
                     ],
                   ),

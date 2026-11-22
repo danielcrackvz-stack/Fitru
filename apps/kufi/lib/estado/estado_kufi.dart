@@ -95,6 +95,8 @@ class EstadoKufi extends ChangeNotifier {
   List<Aviso> avisos = [];
   List<String> busquedas = [];
   Set<String> favoritos = {};
+  List<LugarFijo> lugaresFijos = [];
+  List<LugarFijo> lugaresRecientes = [];
   ItinerarioSugerido? itinerarioElegido;
   Coord? pinMapa;
   IndiceCercania? _indice;
@@ -383,6 +385,8 @@ class EstadoKufi extends ChangeNotifier {
     favoritos = (json['favoritos'] as List<dynamic>? ?? const [])
         .map((e) => '$e')
         .toSet();
+    lugaresFijos = _lugaresDe(json['lugaresFijos']);
+    lugaresRecientes = _lugaresDe(json['lugaresRecientes']);
     tokensUsados = (json['tokensUsados'] as List<dynamic>? ?? const [])
         .map((e) => '$e')
         .toSet();
@@ -422,6 +426,8 @@ class EstadoKufi extends ChangeNotifier {
     'avisos': avisos.map((a) => a.toJson()).toList(),
         'busquedas': busquedas,
         'favoritos': favoritos.toList(),
+        'lugaresFijos': lugaresFijos.map((l) => l.toJson()).toList(),
+        'lugaresRecientes': lugaresRecientes.map((l) => l.toJson()).toList(),
     'tokensUsados': tokensUsados.toList(),
     'libro': libro.toJson(),
     'tarifas': tarifas.toJson(),
@@ -627,6 +633,38 @@ class EstadoKufi extends ChangeNotifier {
   void elegirItinerario(ItinerarioSugerido itinerario) {
     itinerarioElegido = itinerario;
     notifyListeners();
+  }
+
+  LugarFijo? lugarFijo(String etiqueta) {
+    for (final lugar in lugaresFijos) {
+      if (lugar.etiqueta == etiqueta) return lugar;
+    }
+    return null;
+  }
+
+  void guardarLugarFijo(String etiqueta, String nombre, Coord punto) {
+    lugaresFijos.removeWhere((lugar) => lugar.etiqueta == etiqueta);
+    lugaresFijos.add(LugarFijo(etiqueta: etiqueta, nombre: nombre, punto: punto));
+    _tocar();
+  }
+
+  void recordarLugar(String nombre, Coord punto) {
+    final limpio = nombre.trim();
+    if (limpio.isEmpty) return;
+    lugaresRecientes.removeWhere((lugar) => lugar.nombre == limpio);
+    lugaresRecientes.insert(0, LugarFijo(etiqueta: 'reciente', nombre: limpio, punto: punto));
+    if (lugaresRecientes.length > 6) {
+      lugaresRecientes = lugaresRecientes.sublist(0, 6);
+    }
+    _tocar();
+  }
+
+  List<LugarFijo> _lugaresDe(Object? crudo) {
+    if (crudo is! List) return [];
+    return [
+      for (final item in crudo)
+        if (item is Map) LugarFijo.fromJson(item.cast<String, dynamic>()),
+    ];
   }
 
   void recordarBusqueda(String consulta) {

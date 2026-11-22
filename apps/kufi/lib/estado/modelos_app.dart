@@ -208,6 +208,36 @@ class BorradorPago {
   }
 }
 
+class LugarFijo {
+  const LugarFijo({
+    required this.etiqueta,
+    required this.nombre,
+    required this.punto,
+  });
+
+  final String etiqueta;
+  final String nombre;
+  final Coord punto;
+
+  Map<String, dynamic> toJson() => {
+    'etiqueta': etiqueta,
+    'nombre': nombre,
+    'lat': punto.lat,
+    'lon': punto.lon,
+  };
+
+  factory LugarFijo.fromJson(Map<String, dynamic> json) {
+    return LugarFijo(
+      etiqueta: '${json['etiqueta'] ?? ''}',
+      nombre: '${json['nombre'] ?? ''}',
+      punto: Coord(
+        (json['lat'] as num?)?.toDouble() ?? 0,
+        (json['lon'] as num?)?.toDouble() ?? 0,
+      ),
+    );
+  }
+}
+
 abstract class AlmacenLocal {
   Future<String?> leer(String clave);
   Future<void> guardar(String clave, String valor);

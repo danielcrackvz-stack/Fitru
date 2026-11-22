@@ -26,7 +26,8 @@ void main() {
     await tester.tap(find.text('Ingresar'));
     await tester.pumpAndSettle();
     expect(find.text('Bs 50,00'), findsWidgets);
-    expect(find.textContaining('Bienvenido'), findsOneWidget);
+    expect(find.text('¿A dónde vas?'), findsOneWidget);
+    expect(find.text('Mi ubicación'), findsOneWidget);
   });
 
   test('el GeoJSON empaquetado trae las 126 rutas', () async {
